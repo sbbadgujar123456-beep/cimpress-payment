@@ -1,0 +1,2015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EarningPro Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #e2e8f0;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .glass {
+            backdrop-filter: blur(24px);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+
+        .glass-active {
+            background: rgba(30, 64, 175, 0.1);
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: 0 0 40px -10px rgba(37, 99, 235, 0.2);
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .row-today {
+            background: rgba(59, 130, 246, 0.08) !important;
+            border-left: 3px solid #3b82f6 !important;
+        }
+
+        /* Work Section Specifics */
+        .counter-btn {
+            transition: all 0.1s;
+        }
+        .counter-btn:active {
+            transform: scale(0.95);
+        }
+        .counter-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0); }
+            50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.3); }
+        }
+        .animate-pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+
+        /* Multiplier Badge Animations */
+        @keyframes bounce-gentle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+        .anim-bounce-gentle { animation: bounce-gentle 2s infinite ease-in-out; }
+
+        @keyframes tilt-pulse {
+            0%, 100% { transform: scale(1) skewX(-5deg); box-shadow: 0 0 10px rgba(168,85,247,0.3); }
+            50% { transform: scale(1.05) skewX(-10deg); box-shadow: 0 0 20px rgba(168,85,247,0.6); }
+        }
+        .anim-tilt-pulse { animation: tilt-pulse 1s infinite; }
+
+        @keyframes shake-thruster {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(-0.5px, 0.5px) rotate(-1deg); }
+            50% { transform: translate(0.5px, -0.5px) rotate(1deg); }
+            75% { transform: translate(-0.5px, -0.5px) rotate(-1deg); }
+        }
+        .anim-thruster { 
+            animation: shake-thruster 0.15s infinite; 
+            position: relative;
+        }
+        
+        /* Exhaust particles/glow effect for 4x */
+        .anim-thruster::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            height: 12px;
+            background: radial-gradient(ellipse at center, rgba(234, 179, 8, 0.8) 0%, rgba(239, 68, 68, 0.5) 40%, transparent 70%);
+            filter: blur(3px);
+            animation: pulse-glow 0.3s infinite alternate;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Custom Scrollbar for Logs */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+
+        @media (max-width: 640px) {
+            .activity-table-wrapper {
+                margin: 0 -0.5rem;
+                border-radius: 0;
+            }
+            .glass {
+                border-radius: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="selection:bg-blue-500/30">
+
+    <!-- Congratulation Modal -->
+    <div id="congratsModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-6 backdrop-blur-xl bg-slate-950/60 transition-all duration-500 opacity-0 scale-95 pointer-events-none">
+        <div class="relative bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 w-full max-w-sm p-8 rounded-[2rem] shadow-2xl text-center overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500"></div>
+            <div class="mb-4 text-5xl">🎉</div>
+            <h2 class="text-2xl font-black text-white mb-2">Goal Smashed!</h2>
+            <p class="text-slate-400 text-xs font-medium mb-6">You've reached your target of <span id="congratsTarget" class="text-white font-bold">0</span> orders for the day.</p>
+            <button onclick="closeCongrats()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20">Keep Going</button>
+        </div>
+    </div>
+
+    <div class="blob w-[80%] h-[40%] top-[-20%] left-[-10%] bg-blue-600/10"></div>
+    <div class="blob w-[60%] h-[40%] bottom-[-20%] right-[-10%] bg-blue-400/5"></div>
+
+    <header class="sticky top-0 z-40 backdrop-blur-xl bg-slate-950/60 border-b border-white/5">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            
+            <!-- Upgraded Monogram Logo -->
+            <div class="flex items-center gap-3 cursor-pointer select-none">
+                <div class="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)] overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-tr from-blue-500/30 to-purple-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <span class="font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 text-xs sm:text-sm tracking-tighter drop-shadow-md">EP</span>
+                </div>
+                <span class="font-black text-sm tracking-tight text-white hidden sm:flex items-center gap-[2px]">
+                    Earning<span class="text-blue-500">Pro</span>
+                </span>
+            </div>
+            
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Sync Status Indicator -->
+                <div id="syncStatus" class="hidden sm:flex items-center gap-1.5 bg-white/5 border border-white/10 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest text-slate-400 transition-all">
+                    <i class="fa-solid fa-cloud text-slate-500"></i> Local
+                </div>
+
+                <!-- Copy Email Toggle -->
+                <button onclick="copyEmail()" class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-blue-500/20 transition-all group" title="Copy Email">
+                    <i class="fa-regular fa-envelope text-slate-400 text-xs group-hover:text-blue-400 transition-colors"></i>
+                </button>
+
+                <!-- Session Logs Toggle -->
+                <button onclick="switchPage(currentPage === 'home' ? 'sessions' : 'home')" class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
+                    <i id="navSessionIcon" class="fa-solid fa-list-ul text-slate-400 text-xs hover:text-white transition-colors"></i>
+                </button>
+
+                <!-- Sound Mute Toggle -->
+                <button onclick="toggleMute()" id="muteToggle" class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
+                    <i id="muteIcon" class="fa-solid fa-volume-high text-slate-400 text-xs hover:text-white transition-colors"></i>
+                </button>
+
+                <!-- Privacy Toggle -->
+                <button onclick="togglePrivacy()" id="privacyToggle" class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
+                    <i id="privacyIcon" class="fa-solid fa-eye text-slate-400 text-xs hover:text-white transition-colors"></i>
+                </button>
+
+                <!-- Month Selector with Manual Add Option -->
+                <div class="flex items-center bg-white/5 border border-white/10 rounded-full pl-3 pr-1 py-1">
+                    <select id="monthSelector" class="bg-transparent text-[11px] sm:text-xs font-semibold focus:outline-none cursor-pointer appearance-none text-white mr-2">
+                    </select>
+                    <button onclick="addNewMonth()" class="w-6 h-6 rounded-full bg-slate-800 border border-white/5 flex items-center justify-center hover:bg-blue-600 transition-colors text-slate-400 hover:text-white" title="Add Next Month">
+                        <i class="fa-solid fa-plus text-[10px]"></i>
+                    </button>
+                </div>
+                
+                <button onclick="toggleModal(true)" class="flex items-center gap-2 bg-white text-slate-950 px-3 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-black hover:opacity-90 transition-all shrink-0">
+                    <i class="fa-solid fa-crosshairs text-[10px]"></i>
+                    <span id="headerGoalText">₹XX</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- HOMEPAGE VIEW -->
+    <main id="homePage" class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10 transition-all duration-300">
+
+        <!-- WORK SECTION -->
+        <div class="mb-8">
+            <div id="workCard" class="glass rounded-[2rem] p-6 sm:p-8 relative overflow-hidden transition-all duration-500">
+                
+                <!-- Responsive Top Badges -->
+                <div class="flex justify-between items-start mb-6 sm:static sm:mb-0">
+                    <!-- Multiplier Badge -->
+                    <div id="multiplierBadgeContainer" class="sm:absolute sm:top-8 sm:left-8 z-20 flex flex-col items-start gap-1">
+                         <div id="cycleMultiplierBadge" class="transition-all duration-500">
+                            <!-- Filled dynamically by JS -->
+                         </div>
+                         <div id="ordersToNextTier" class="text-[9px] font-bold text-slate-400 pl-1 transition-all duration-300"></div>
+                    </div>
+
+                    <!-- Status Badge -->
+                    <div class="sm:absolute sm:top-8 sm:right-8 z-20 flex flex-col items-end gap-2 relative">
+                        <div class="flex items-center gap-2 mb-1">
+                            <button onclick="toggleWorkSettings()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all shadow-sm relative z-30 cursor-pointer">
+                                <i class="fa-solid fa-gear text-xs pointer-events-none"></i>
+                            </button>
+                        </div>
+                         <div id="speedBadge" class="hidden px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-800 text-slate-500 shadow-md">
+                            Ready
+                         </div>
+                    </div>
+                </div>
+
+                <!-- Timer Display -->
+                <div class="text-center mb-6 sm:mt-0 relative z-10">
+                    <div class="inline-flex flex-col items-center">
+                        <!-- Break Timer -->
+                        <div id="breakTimerContainer" class="hidden mb-1 flex items-center gap-2">
+                            <div class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></div>
+                            <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">On Break</span>
+                            <span id="breakTimerDisplay" class="font-mono text-[11px] font-bold text-orange-400">00:00</span>
+                        </div>
+                        
+                        <div class="inline-flex items-center justify-center bg-black/20 rounded-2xl px-6 py-2 border border-white/5">
+                            <span id="timerDisplay" class="font-mono text-3xl sm:text-4xl font-black text-white tracking-widest tabular-nums">00:00:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Big Counter -->
+                <div class="flex justify-center mb-8 relative">
+                    <button id="mainCounterBtn" onclick="incrementWorkCount()" class="counter-btn group relative w-48 h-48 sm:w-56 sm:h-56 rounded-full glass flex flex-col items-center justify-center border-4 border-white/5 hover:border-blue-500/30 transition-all duration-300 disabled">
+                        <div class="absolute inset-0 rounded-full bg-blue-500/0 group-hover:bg-blue-500/5 transition-all"></div>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Total Orders</span>
+                        <span id="workCountDisplay" class="text-7xl sm:text-8xl font-black text-white tracking-tighter leading-none select-none transition-all duration-300">0</span>
+                        <div class="mt-4 flex flex-col items-center">
+                            <span class="text-[9px] font-bold text-slate-600 uppercase tracking-widest">ART</span>
+                            <span id="artDisplay" class="text-xs font-bold text-blue-400 mt-0.5">-- sec</span>
+                        </div>
+                    </button>
+                    
+                    <!-- Goal Ring SVGs -->
+                    <svg class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 sm:w-56 sm:h-56 -rotate-90 pointer-events-none" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2" />
+                        <circle id="goalRing" cx="50" cy="50" r="48" fill="none" stroke="#3b82f6" stroke-width="2" stroke-dasharray="301.59" stroke-dashoffset="301.59" class="transition-all duration-500" />
+                    </svg>
+                </div>
+
+                <!-- Day Progress Bar -->
+                <div class="w-full max-w-xs mx-auto mb-8 relative z-10">
+                    <div class="flex justify-between items-end text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
+                        <div class="flex flex-col items-start gap-0.5">
+                            <span>Day's Goal</span>
+                            <span id="ordersLeftText" class="text-[8px] font-bold text-slate-600 tracking-wider normal-case"></span>
+                        </div>
+                        <span id="sessionProgressText" class="text-blue-400">0%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div id="sessionProgressBar" class="h-full bg-blue-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Footer Controls -->
+                <div class="flex items-center justify-center gap-3 sm:gap-4 relative z-10">
+                    <button onclick="resetWorkSession()" class="px-4 sm:px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-all">
+                        Reset
+                    </button>
+                    <button id="breakToggleBtn" onclick="toggleBreak()" class="hidden w-28 sm:w-32 px-4 sm:px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-mug-hot"></i> Break
+                    </button>
+                    <button id="loginToggleBtn" onclick="toggleLogin()" class="w-28 sm:w-32 px-4 sm:px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket"></i> Login
+                    </button>
+                </div>
+
+                <!-- Logout Alert Container -->
+                <div id="logoutTimerContainer" class="sm:absolute sm:bottom-8 sm:right-8 mt-6 sm:mt-0 flex justify-center z-20 transition-all duration-500 hidden">
+                    <!-- Populated dynamically by JS -->
+                </div>
+
+                <!-- Goal Settings Overlay -->
+                <div id="workSettings" class="absolute inset-0 bg-slate-900/95 z-40 flex flex-col items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+                    <h3 class="text-sm font-black text-white uppercase tracking-widest mb-4">Day's Goal</h3>
+                    <div class="flex items-center gap-2 mb-6">
+                        <button onclick="adjustWorkGoal(-10)" class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white"><i class="fa-solid fa-minus"></i></button>
+                        <input id="sessionGoalInput" type="number" value="100" class="w-24 bg-transparent text-center text-3xl font-black text-white border-b border-white/10 focus:border-blue-500 outline-none p-2">
+                        <button onclick="adjustWorkGoal(10)" class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    <button onclick="saveWorkSettings()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Monthly Summary -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6 sm:mb-8">
+            <div class="lg:col-span-3 p-5 sm:p-6 glass rounded-[2rem] flex flex-col justify-center">
+                <div class="flex items-end gap-2 mb-4">
+                    <h2 id="totalNetDisplay" class="text-3xl sm:text-4xl font-black text-white tracking-tighter">₹XX</h2>
+                    <span id="monthlyGoalDisplay" class="text-slate-500 text-[10px] sm:text-xs font-bold mb-1 sm:mb-1.5">/ ₹XX NET</span>
+                </div>
+                <div class="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                    <div id="mainProgressBar" class="bg-blue-600 h-full rounded-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="p-5 sm:p-6 glass bg-blue-600/5 border-blue-500/20 rounded-[2rem] flex flex-col justify-center text-center">
+                <div class="flex flex-col items-center">
+                    <span class="text-[9px] sm:text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Total Progress</span>
+                    <div id="statusIcon">
+                        <i class="fa-solid fa-bolt text-blue-400 text-xl sm:text-2xl"></i>
+                    </div>
+                    <span id="percentDone" class="text-[11px] sm:text-xs font-bold mt-2 text-slate-300">0% Done</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
+            <!-- Phase 1 Card -->
+            <div id="cardP1" class="p-5 sm:p-6 glass rounded-[2rem] border-white/10 transition-all duration-500 relative overflow-hidden">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h3 id="titleP1" class="text-[11px] sm:text-xs font-black uppercase tracking-widest text-slate-400">Loading...</h3>
+                        <div id="statusBadgeP1" class="mt-1"></div>
+                    </div>
+                    <div id="trophyP1" class="hidden"><i class="fa-solid fa-trophy text-green-500 text-sm"></i></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-600 uppercase tracking-tighter mb-1">Period Earnings</p>
+                        <p id="netP1" class="text-xl font-black text-white">₹XX</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[9px] font-bold text-slate-600 uppercase tracking-tighter mb-1">Errors</p>
+                        <p id="errorsP1" class="text-xl font-black text-slate-300">0</p>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                        <div id="barP1" class="bg-blue-500 h-full rounded-full transition-all duration-1000" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between mt-1.5 text-[8px] font-bold uppercase tracking-wider text-slate-500">
+                        <span>Phase Completion</span>
+                        <span id="percentP1" class="text-blue-400">0%</span>
+                    </div>
+                </div>
+                <div id="metricsP1" class="space-y-2">
+                    <div class="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
+                        <div class="flex items-center gap-2 text-green-400">
+                            <i class="fa-solid fa-boxes-stacked text-[10px]"></i>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Orders Done</span>
+                        </div>
+                        <span id="ordersP1" class="text-xs font-black text-white">0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
+                        <div class="flex items-center gap-2 text-blue-500">
+                            <i class="fa-solid fa-bullseye text-[10px]"></i>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Required</span>
+                        </div>
+                        <span id="reqP1" class="text-xs font-black">0</span>
+                    </div>
+                    <div id="footerP1" class="mt-4 pt-3 border-t border-white/5 flex justify-between items-center min-h-[36px]"></div>
+                </div>
+            </div>
+
+            <!-- Phase 2 Card -->
+            <div id="cardP2" class="p-5 sm:p-6 glass rounded-[2rem] border-white/10 transition-all duration-500 relative overflow-hidden">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h3 id="titleP2" class="text-[11px] sm:text-xs font-black uppercase tracking-widest text-slate-400">Loading...</h3>
+                        <div id="statusBadgeP2" class="mt-1"></div>
+                    </div>
+                    <div id="trophyP2" class="hidden"><i class="fa-solid fa-trophy text-green-500 text-sm"></i></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-600 uppercase tracking-tighter mb-1">Period Earnings</p>
+                        <p id="netP2" class="text-xl font-black text-white">₹XX</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[9px] font-bold text-slate-600 uppercase tracking-tighter mb-1">Errors</p>
+                        <p id="errorsP2" class="text-xl font-black text-slate-300">0</p>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                        <div id="barP2" class="bg-blue-500 h-full rounded-full transition-all duration-1000" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between mt-1.5 text-[8px] font-bold uppercase tracking-wider text-slate-500">
+                        <span>Phase Completion</span>
+                        <span id="percentP2" class="text-blue-400">0%</span>
+                    </div>
+                </div>
+                <div id="metricsP2" class="space-y-2">
+                    <div class="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
+                        <div class="flex items-center gap-2 text-green-400">
+                            <i class="fa-solid fa-boxes-stacked text-[10px]"></i>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Orders Done</span>
+                        </div>
+                        <span id="ordersP2" class="text-xs font-black text-white">0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-white/[0.02] rounded-xl border border-white/5">
+                        <div class="flex items-center gap-2 text-blue-500">
+                            <i class="fa-solid fa-bullseye text-[10px]"></i>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Required</span>
+                        </div>
+                        <span id="reqP2" class="text-xs font-black">0</span>
+                    </div>
+                    <div id="footerP2" class="mt-4 pt-3 border-t border-white/5 flex justify-between items-center min-h-[36px]"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="glass rounded-[2rem] overflow-hidden border-none bg-white/[0.01]">
+            <div class="p-5 sm:p-6 border-b border-white/5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="fa-regular fa-calendar text-blue-500"></i>
+                    <h3 class="font-bold text-xs uppercase tracking-widest">Activity Logs</h3>
+                </div>
+                <span id="istClock" class="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0 ml-4 text-right">IST Loading...</span>
+            </div>
+            <div class="p-4 sm:p-6" id="calendarContainer">
+                <!-- Javascript will inject calendar grid here -->
+            </div>
+        </div>
+
+        <!-- Trajectory Chart -->
+        <div class="glass rounded-[2rem] overflow-hidden border-none bg-white/[0.01] mt-8 mb-6">
+            <div class="p-5 sm:p-6 border-b border-white/5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-chart-line text-purple-500"></i>
+                    <h3 class="font-bold text-xs uppercase tracking-widest">Monthly Order Trajectory</h3>
+                </div>
+            </div>
+            <div class="p-4 sm:p-6 h-[300px] sm:h-[400px] w-full relative">
+                <canvas id="trajectoryChart"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <!-- SESSIONS PAGE VIEW -->
+    <main id="sessionsPage" class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10 hidden transition-all duration-300">
+        <div class="flex items-center gap-4 mb-8">
+            <button onclick="switchPage('home')" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 text-slate-400 hover:text-white transition-all shrink-0">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <h2 class="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+                <i class="fa-solid fa-clock-rotate-left text-blue-500"></i> Historical Sessions
+            </h2>
+        </div>
+
+        <!-- Grouped Timeline Container -->
+        <div class="glass rounded-[2rem] p-6 sm:p-8" id="sessionTimelineContainer">
+            <!-- Populated via JS -->
+        </div>
+    </main>
+
+    <div id="goalModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 backdrop-blur-md bg-slate-950/40">
+        <div class="absolute inset-0" onclick="toggleModal(false)"></div>
+        <div class="relative bg-slate-900 border border-white/10 w-full max-w-sm p-6 sm:p-8 rounded-[2rem] shadow-2xl">
+            <h2 class="text-lg font-black mb-6 text-white tracking-tight">Set Monthly Goal</h2>
+            <div class="mb-8">
+                <label class="block text-slate-500 text-[9px] font-black uppercase tracking-widest mb-3">Net Payout Target (₹)</label>
+                <div class="relative">
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-700">₹</span>
+                    <input id="goalInput" type="number" class="w-full bg-transparent border-b border-white/10 focus:border-blue-500 py-3 pl-8 text-3xl font-black text-white outline-none transition-all">
+                </div>
+            </div>
+            <button onclick="saveGoal()" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl text-sm hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20">
+                Update & Broadcast
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Constants
+        const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        
+        // Exact user-provided config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOK3JIBa3H6JS-tNnQw62REmtt9PPan6U",
+            authDomain: "cimpress-payment.firebaseapp.com",
+            projectId: "cimpress-payment",
+            storageBucket: "cimpress-payment.firebasestorage.app",
+            messagingSenderId: "526057047239",
+            appId: "1:526057047239:web:cf2430fa5e0efc26be2ae2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Unified static document path base so ALL devices read from the exact same file
+        const appId = 'cimpress-shared-v1';
+
+        // State
+        let months = [];
+        let activeMonthId = '';
+        let monthlyGoal = 50000; // Global fallback
+        let currentUser = null;
+        let isMasked = localStorage.getItem('earnings_privacy_masked') === 'true';
+
+        // View State
+        window.currentPage = 'home';
+        window.trajectoryChartInstance = null; // Chart.js reference
+
+        // Work Session State
+        let historicalSessions = []; 
+        let workSession = {
+            status: 'LOGGED_OUT',
+            startTime: null,
+            accumulatedTime: 0,
+            count: 0,
+            goal: 100,
+            hasReachedGoal: false,
+            timeline: [],
+            lastPauseTime: null,
+            playedBuzzer: false
+        };
+        let lastSpeedState = 'ready'; 
+
+        // Robust Synthetic Sound Engine (Web Audio API)
+        let isMuted = localStorage.getItem('earnings_audio_muted') === 'true';
+        let audioCtx = null;
+
+        const initAudio = () => {
+            try {
+                if (!audioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        audioCtx = new AudioContext();
+                    }
+                }
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch (e) {
+                console.warn("Audio Context blocked or unsupported:", e);
+            }
+        };
+
+        const playSound = (type) => {
+            if (isMuted) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            try {
+                const now = audioCtx.currentTime;
+                
+                const playNote = (freq, wave, vol, startTime, duration) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = wave;
+                    osc.frequency.setValueAtTime(freq, startTime);
+                    
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(vol, startTime + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                };
+
+                switch(type) {
+                    case 'click':
+                        playNote(800, 'sine', 0.2, now, 0.1);
+                        break;
+                    case 'onTrack':
+                        playNote(523.25, 'sine', 0.15, now, 0.15); 
+                        playNote(659.25, 'sine', 0.15, now + 0.15, 0.4); 
+                        break;
+                    case 'offTrack':
+                        playNote(349.23, 'triangle', 0.15, now, 0.2); 
+                        playNote(293.66, 'triangle', 0.15, now + 0.2, 0.4); 
+                        break;
+                    case 'hundred':
+                        playNote(523.25, 'sine', 0.15, now, 0.1);       
+                        playNote(659.25, 'sine', 0.15, now + 0.1, 0.1); 
+                        playNote(783.99, 'sine', 0.15, now + 0.2, 0.1); 
+                        playNote(1046.50, 'sine', 0.2, now + 0.3, 0.6); 
+                        break;
+                    case 'target':
+                        playNote(440, 'sine', 0.2, now, 0.8);
+                        playNote(554.37, 'sine', 0.2, now + 0.2, 0.8);
+                        playNote(659.25, 'sine', 0.2, now + 0.4, 0.8);
+                        playNote(880, 'sine', 0.2, now + 0.6, 1.2);
+                        break;
+                    case 'buzzer':
+                        playNote(150, 'sawtooth', 0.4, now, 0.3);
+                        playNote(150, 'sawtooth', 0.4, now + 0.4, 0.3);
+                        playNote(150, 'sawtooth', 0.4, now + 0.8, 0.5);
+                        break;
+                }
+            } catch (e) {}
+        };
+
+        window.toggleMute = () => {
+            isMuted = !isMuted;
+            localStorage.setItem('earnings_audio_muted', isMuted);
+            updateHeaderIcons();
+        };
+
+        const updateSyncStatus = (state) => {
+            const el = document.getElementById('syncStatus');
+            if(!el) return;
+            if (state === 'live') {
+                el.innerHTML = '<i class="fa-solid fa-cloud text-green-400"></i> <span class="text-green-400">Live</span>';
+            } else if (state === 'syncing') {
+                el.innerHTML = '<i class="fa-solid fa-arrows-rotate text-blue-400 animate-spin"></i> <span class="text-blue-400">Syncing</span>';
+            } else if (state === 'error') {
+                el.innerHTML = '<i class="fa-solid fa-cloud-xmark text-red-500"></i> <span class="text-red-500">Blocked</span>';
+            } else {
+                el.innerHTML = '<i class="fa-solid fa-cloud text-slate-500"></i> Local';
+            }
+        };
+
+        const updateHeaderIcons = () => {
+            const muteIcon = document.getElementById('muteIcon');
+            if (muteIcon) muteIcon.className = isMuted ? "fa-solid fa-volume-xmark text-red-400 text-xs hover:text-white transition-colors" : "fa-solid fa-volume-high text-slate-400 text-xs hover:text-white transition-colors";
+            
+            const privacyIcon = document.getElementById('privacyIcon');
+            if (privacyIcon) privacyIcon.className = isMasked ? "fa-solid fa-eye-slash text-blue-500 text-xs hover:text-white transition-colors" : "fa-solid fa-eye text-slate-400 text-xs hover:text-white transition-colors";
+        };
+
+        // Logic Helpers
+        const getISTDate = () => {
+            const now = new Date();
+            const istOffset = 330; 
+            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+            return new Date(utcTime + (istOffset * 60000));
+        };
+
+        const isTodayIST = (timestamp) => {
+            const istOffset = 330; 
+            const utcTime = timestamp + (new Date(timestamp).getTimezoneOffset() * 60000);
+            const istDate = new Date(utcTime + (istOffset * 60000));
+            const nowIST = getISTDate();
+            return istDate.getFullYear() === nowIST.getFullYear() &&
+                   istDate.getMonth() === nowIST.getMonth() &&
+                   istDate.getDate() === nowIST.getDate();
+        };
+
+        const getTodayStats = () => {
+            let todayOrders = 0;
+            let todayWorkMs = 0;
+
+            const allSessions = [...(historicalSessions || [])];
+            if (workSession && workSession.status !== 'LOGGED_OUT' && workSession.timeline && workSession.timeline.length > 0) {
+                allSessions.push(JSON.parse(JSON.stringify(workSession)));
+            }
+
+            allSessions.forEach(sess => {
+                if (!sess.timeline || sess.timeline.length === 0) return;
+                const sessStartTs = sess.timeline[0].start;
+                if (isTodayIST(sessStartTs)) {
+                    todayOrders += (sess.count || 0);
+                    sess.timeline.forEach(item => {
+                        if (item.type === 'WORK') {
+                            const endTs = item.end || Date.now();
+                            todayWorkMs += (endTs - item.start);
+                        }
+                    });
+                }
+            });
+
+            return { todayOrders, todayWorkMs };
+        };
+
+        const formatCurrency = (val) => {
+            if (isMasked) return "₹XX";
+            return `₹${Number(val).toLocaleString(undefined, {maximumFractionDigits: 0})}`;
+        };
+
+        const calculateTieredEarnings = (orders) => {
+            const n = Number(orders) || 0;
+            if (n <= 1000) return n * 1;
+            if (n <= 2000) return 1000 + (n - 1000) * 2;
+            if (n <= 3000) return 3000 + (n - 2000) * 3;
+            return 6000 + (n - 3000) * 4;
+        };
+
+        const updateMultiplierBadge = (orders, isVisible = true) => {
+            const container = document.getElementById('multiplierBadgeContainer');
+            if (container) {
+                if (!isVisible) {
+                    container.style.display = 'none';
+                    return;
+                } else {
+                    container.style.display = '';
+                }
+            }
+
+            const badge = document.getElementById('cycleMultiplierBadge');
+            const nextTierText = document.getElementById('ordersToNextTier');
+            if (!badge) return;
+            
+            const n = Number(orders) || 0;
+            let text, classes, icon;
+
+            if (n < 1000) {
+                text = "1x Rate";
+                icon = '<i class="fa-solid fa-seedling text-slate-500"></i>';
+                classes = "bg-slate-500/10 text-slate-400 border-slate-500/20";
+                if (nextTierText) nextTierText.innerHTML = `<span class="text-slate-300">${1000 - n}</span> left for 2x`;
+            } else if (n < 2000) {
+                text = "2x Rate";
+                icon = '<i class="fa-solid fa-angles-up text-blue-400"></i>';
+                classes = "anim-bounce-gentle bg-blue-500/20 text-blue-400 border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.3)]";
+                if (nextTierText) nextTierText.innerHTML = `<span class="text-blue-300">${2000 - n}</span> left for 3x`;
+            } else if (n < 3000) {
+                text = "3x Rate";
+                icon = '<i class="fa-solid fa-rocket text-purple-400"></i>';
+                classes = "anim-tilt-pulse bg-purple-500/20 text-purple-400 border-purple-500/30";
+                if (nextTierText) nextTierText.innerHTML = `<span class="text-purple-300">${3000 - n}</span> left for 4x`;
+            } else {
+                text = "MAX 4x RATE";
+                icon = '<i class="fa-solid fa-fire text-yellow-500"></i>';
+                classes = "anim-thruster bg-yellow-500/20 text-yellow-400 border-yellow-500/40 shadow-[0_0_20px_rgba(234,179,8,0.5)]";
+                if (nextTierText) nextTierText.innerText = '';
+            }
+
+            badge.className = `px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5 transition-all duration-500 ${classes}`;
+            badge.innerHTML = `${icon} <span>${text}</span>`;
+        };
+
+        const getDeductionMultiplier = (errors) => {
+            const e = Number(errors) || 0;
+            if (e === 0) return 1;
+            if (e <= 10) return 0.9;
+            if (e <= 20) return 0.8;
+            if (e <= 30) return 0.5;
+            return 0; 
+        };
+
+        const getRequiredOrdersForNet = (targetNet, currentErrors, currentRegularOrders = 0) => {
+            const mult = getDeductionMultiplier(currentErrors);
+            if (mult === 0) return Infinity; 
+            const grossTarget = targetNet / (mult * 0.9);
+            
+            const remainingTargetForPremium = Math.max(0, grossTarget - (currentRegularOrders * 1));
+            
+            let reqPremium = 0;
+            if (remainingTargetForPremium <= 1000) reqPremium = remainingTargetForPremium;
+            else if (remainingTargetForPremium <= 3000) reqPremium = 1000 + (remainingTargetForPremium - 1000) / 2;
+            else if (remainingTargetForPremium <= 6000) reqPremium = 2000 + (remainingTargetForPremium - 3000) / 3;
+            else reqPremium = 3000 + (remainingTargetForPremium - 6000) / 4;
+
+            return Math.ceil(reqPremium) + currentRegularOrders;
+        };
+
+        const generateMonthTemplate = (year, monthIdx) => {
+            const monthName = MONTH_NAMES[monthIdx];
+            const monthId = `${monthName}-${year % 100}`;
+            const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+            return { 
+                id: monthId, 
+                name: monthName, year, monthIdx, 
+                goal: 50000, // Individual month target tracking
+                days: Array.from({ length: daysInMonth }, (_, i) => ({ date: i + 1, premiumOrders: 0, regularOrders: 0, errors: 0 })) 
+            };
+        };
+
+        // --- CLOUD ENGINE: Aggressive Push & Pull ---
+        const getSyncDoc = () => doc(db, 'artifacts', appId, 'public', 'data', 'appState', 'singleton');
+
+        const saveToCloud = async () => {
+            updateSyncStatus('syncing');
+            try {
+                const cleanData = JSON.parse(JSON.stringify({ 
+                    months, 
+                    monthlyGoal, 
+                    workSession,
+                    historicalSessions,
+                    lastSync: new Date().toISOString()
+                }));
+                // Secure local fallback
+                localStorage.setItem('ep_cache', JSON.stringify(cleanData));
+                
+                // Force sync to Firebase
+                await setDoc(getSyncDoc(), cleanData, { merge: true });
+                updateSyncStatus('live');
+            } catch (e) {
+                console.error("Firebase sync error:", e);
+                updateSyncStatus('error');
+            }
+        };
+
+        const syncMonths = () => {
+            const ist = getISTDate();
+            const currentYear = ist.getFullYear();
+            const currentMonthIdx = ist.getMonth();
+            const currentMonthId = `${MONTH_NAMES[currentMonthIdx]}-${currentYear % 100}`;
+
+            if (!months.find(m => m.id === "Jan-26")) {
+                months.push(generateMonthTemplate(2026, 0));
+            }
+
+            if (!months.find(m => m.id === currentMonthId)) {
+                months.push(generateMonthTemplate(currentYear, currentMonthIdx));
+            }
+
+            const activeM = months.find(m => m.id === currentMonthId);
+            if (activeM) {
+                const lastDay = new Date(activeM.year, activeM.monthIdx + 1, 0).getDate();
+                if (ist.getDate() >= lastDay - 5) {
+                    const nextDate = new Date(activeM.year, activeM.monthIdx + 1, 1);
+                    const nextId = `${MONTH_NAMES[nextDate.getMonth()]}-${nextDate.getFullYear() % 100}`;
+                    if (!months.find(m => m.id === nextId)) {
+                        months.push(generateMonthTemplate(nextDate.getFullYear(), nextDate.getMonth()));
+                    }
+                }
+            }
+
+            months.sort((a, b) => (a.year * 12 + a.monthIdx) - (b.year * 12 + b.monthIdx));
+        };
+
+        window.addNewMonth = async () => {
+            if (months.length === 0) return;
+            const lastMonth = months[months.length - 1];
+            let nextYear = lastMonth.year;
+            let nextMonthIdx = lastMonth.monthIdx + 1;
+            if (nextMonthIdx > 11) {
+                nextMonthIdx = 0;
+                nextYear++;
+            }
+            const nextId = `${MONTH_NAMES[nextMonthIdx]}-${nextYear % 100}`;
+            if (!months.find(m => m.id === nextId)) {
+                months.push(generateMonthTemplate(nextYear, nextMonthIdx));
+                activeMonthId = nextId;
+                updateUI();
+                renderMonthSelector();
+                saveToCloud(); 
+            }
+        };
+
+        const setupLiveSync = () => {
+            updateSyncStatus('syncing');
+            return onSnapshot(getSyncDoc(), (snap) => {
+                if (snap.exists()) {
+                    const cloudData = snap.data();
+                    if (cloudData.months) months = cloudData.months;
+                    if (cloudData.monthlyGoal) monthlyGoal = cloudData.monthlyGoal;
+                    
+                    if (cloudData.workSession) {
+                        workSession = cloudData.workSession;
+                        if (workSession.status === undefined) {
+                            workSession.status = workSession.isRunning ? 'WORKING' : (workSession.lastPauseTime ? 'ON_BREAK' : 'LOGGED_OUT');
+                        }
+                    }
+                    if (cloudData.historicalSessions) historicalSessions = cloudData.historicalSessions;
+                    
+                    localStorage.setItem('ep_cache', JSON.stringify(cloudData));
+                    updateSyncStatus('live');
+                } else {
+                    // Seed the cloud database initially if it's perfectly empty
+                    saveToCloud();
+                }
+
+                syncMonths();
+                
+                renderMonthSelector();
+                updateUI();
+                if (typeof updateWorkUI === 'function') updateWorkUI();
+                if (window.currentPage === 'sessions' && typeof window.updateSessionsPage === 'function') window.updateSessionsPage();
+                
+            }, (error) => {
+                console.error("Firebase Sync Blocked by Rules/Network:", error);
+                updateSyncStatus('error');
+            });
+        };
+
+        // --- WORK SECTION LOGIC ---
+        
+        window.toggleLogin = async () => {
+            const now = Date.now();
+            initAudio();
+
+            if (workSession.status === 'LOGGED_OUT') {
+                workSession.status = 'WORKING';
+                workSession.startTime = now;
+                workSession.timeline.push({ type: 'WORK', start: now, end: null, count: 0 });
+                lastSpeedState = 'ready';
+            } else {
+                if (workSession.status === 'WORKING') {
+                    let lastWork = workSession.timeline.find(t => t.type === 'WORK' && !t.end);
+                    if (lastWork) lastWork.end = now;
+                    const elapsed = (now - workSession.startTime) / 1000;
+                    workSession.accumulatedTime += elapsed;
+                } else if (workSession.status === 'ON_BREAK') {
+                    let lastBreak = workSession.timeline.find(t => t.type === 'BREAK' && !t.end);
+                    if (lastBreak) lastBreak.end = now;
+                }
+
+                if (workSession.timeline && workSession.timeline.length > 0) {
+                    historicalSessions.push(JSON.parse(JSON.stringify(workSession)));
+                }
+
+                workSession = {
+                    status: 'LOGGED_OUT',
+                    startTime: null,
+                    accumulatedTime: 0,
+                    count: 0,
+                    goal: workSession.goal,
+                    hasReachedGoal: false,
+                    timeline: [],
+                    lastPauseTime: null,
+                    playedBuzzer: false
+                };
+                lastSpeedState = 'ready';
+            }
+            
+            if (typeof updateWorkUI === 'function') updateWorkUI();
+            if (window.currentPage === 'sessions' && typeof window.updateSessionsPage === 'function') window.updateSessionsPage();
+            saveToCloud(); 
+        };
+
+        window.toggleBreak = async () => {
+            const now = Date.now();
+            initAudio(); 
+
+            if (workSession.status === 'WORKING') {
+                workSession.status = 'ON_BREAK';
+                workSession.lastPauseTime = now;
+                lastSpeedState = 'ready'; 
+                
+                let lastWork = workSession.timeline.find(t => t.type === 'WORK' && !t.end);
+                if (lastWork) lastWork.end = now;
+                
+                workSession.timeline.push({ type: 'BREAK', start: now, end: null });
+
+                const elapsed = (now - workSession.startTime) / 1000;
+                workSession.accumulatedTime += elapsed;
+                workSession.startTime = null;
+
+            } else if (workSession.status === 'ON_BREAK') {
+                workSession.status = 'WORKING';
+                lastSpeedState = 'ready'; 
+
+                let lastBreak = workSession.timeline.find(t => t.type === 'BREAK' && !t.end);
+                if (lastBreak) lastBreak.end = now;
+                
+                workSession.timeline.push({ type: 'WORK', start: now, end: null, count: 0 });
+
+                workSession.lastPauseTime = null;
+                workSession.startTime = now;
+            }
+            
+            if (typeof updateWorkUI === 'function') updateWorkUI();
+            if (window.currentPage === 'sessions' && typeof window.updateSessionsPage === 'function') window.updateSessionsPage();
+            saveToCloud();
+        };
+
+        window.resetWorkSession = async () => {
+            // Clears the ACTIVE running session ONLY
+            if (workSession.status === 'WORKING') {
+                workSession.startTime = Date.now();
+                workSession.accumulatedTime = 0;
+                workSession.count = 0;
+                workSession.timeline = [{ type: 'WORK', start: Date.now(), end: null, count: 0 }];
+            } else if (workSession.status === 'ON_BREAK') {
+                workSession.startTime = null;
+                workSession.accumulatedTime = 0;
+                workSession.count = 0;
+                workSession.timeline = [{ type: 'BREAK', start: Date.now(), end: null }];
+                workSession.lastPauseTime = Date.now();
+            }
+            
+            if (typeof updateWorkUI === 'function') updateWorkUI();
+            if (window.currentPage === 'sessions' && typeof window.updateSessionsPage === 'function') window.updateSessionsPage();
+            saveToCloud();
+        };
+
+        window.incrementWorkCount = async () => {
+            if (workSession.status !== 'WORKING') return;
+            
+            workSession.count = (workSession.count || 0) + 1;
+            
+            let activeWork = workSession.timeline.find(t => t.type === 'WORK' && !t.end);
+            if (activeWork) {
+                activeWork.count = (activeWork.count || 0) + 1;
+            }
+
+            const todayStats = getTodayStats();
+            const goal = workSession.goal || 100;
+            
+            if (todayStats.todayOrders === goal && !workSession.hasReachedGoal) {
+                // Handled in updateWorkUI
+            } else if (todayStats.todayOrders % 100 === 0 && todayStats.todayOrders > 0) {
+                playSound('hundred');
+            } else {
+                playSound('click');
+            }
+
+            if (typeof updateWorkUI === 'function') updateWorkUI();
+            saveToCloud(); // Save click live
+        };
+
+        window.toggleWorkSettings = () => {
+            const settings = document.getElementById('workSettings');
+            if(settings) {
+                const isActive = settings.style.opacity === '1';
+                settings.style.opacity = isActive ? '0' : '1';
+                settings.style.pointerEvents = isActive ? 'none' : 'auto';
+                if (!isActive) {
+                    const input = document.getElementById('sessionGoalInput');
+                    if(input) input.value = workSession.goal;
+                }
+            }
+        };
+
+        window.adjustWorkGoal = (amount) => {
+            const input = document.getElementById('sessionGoalInput');
+            if(input) input.value = Math.max(1, Number(input.value) + amount);
+        };
+
+        window.saveWorkSettings = async () => {
+            const input = document.getElementById('sessionGoalInput');
+            if(input) {
+                const newGoal = Number(input.value) || 100;
+                workSession.goal = newGoal;
+                
+                // If they set the goal higher, allow celebration again
+                const todayStats = getTodayStats();
+                if (todayStats.todayOrders < newGoal) {
+                    workSession.hasReachedGoal = false;
+                }
+            }
+            
+            window.toggleWorkSettings();
+            if (typeof updateWorkUI === 'function') updateWorkUI();
+            saveToCloud();
+        };
+
+        // UI Routing
+        window.switchPage = (pageId) => {
+            window.currentPage = pageId;
+            const homePage = document.getElementById('homePage');
+            const sessionsPage = document.getElementById('sessionsPage');
+            const navIcon = document.getElementById('navSessionIcon');
+
+            if (pageId === 'sessions') {
+                if(homePage) homePage.classList.add('hidden');
+                if(sessionsPage) sessionsPage.classList.remove('hidden');
+                if(navIcon) navIcon.className = "fa-solid fa-house text-blue-400 text-xs hover:text-white transition-colors";
+                if (typeof window.updateSessionsPage === 'function') window.updateSessionsPage();
+            } else {
+                if(homePage) homePage.classList.remove('hidden');
+                if(sessionsPage) sessionsPage.classList.add('hidden');
+                if(navIcon) navIcon.className = "fa-solid fa-list-ul text-slate-400 text-xs hover:text-white transition-colors";
+            }
+        };
+
+        const formatISTTimeStr = (ts, sessionStartTs) => {
+            if (!ts) return "Ongoing";
+            
+            const date = new Date(ts);
+            const options = { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true };
+            let str = date.toLocaleTimeString('en-US', options);
+            
+            if (sessionStartTs) {
+                const startDate = new Date(sessionStartTs);
+                const istStartStr = startDate.toLocaleDateString('en-US', {timeZone: 'Asia/Kolkata'});
+                const istEndStr = date.toLocaleDateString('en-US', {timeZone: 'Asia/Kolkata'});
+                if (istStartStr !== istEndStr) {
+                    str += ' <span class="text-blue-500 font-black tracking-tighter">(Next Day)</span>';
+                }
+            }
+            return str;
+        };
+
+        const formatDurStr = (ms) => {
+            if (ms < 60000) return `${Math.floor(ms/1000)}s`;
+            const m = Math.floor(ms / 60000);
+            const h = Math.floor(m / 60);
+            return h > 0 ? `${h}h ${m%60}m` : `${m}m`;
+        };
+
+        window.updateSessionsPage = () => {
+            const container = document.getElementById('sessionTimelineContainer');
+            if (!container) return;
+            
+            let allSessions = [...(historicalSessions || [])];
+            if (workSession && workSession.status !== 'LOGGED_OUT' && workSession.timeline && workSession.timeline.length > 0) {
+                allSessions.push(JSON.parse(JSON.stringify(workSession)));
+            }
+
+            if (allSessions.length === 0) {
+                container.innerHTML = '<p class="text-center text-xs text-slate-500 py-12">No historical sessions tracked yet. Login to start tracking.</p>';
+                return;
+            }
+
+            allSessions.sort((a, b) => b.timeline[0].start - a.timeline[0].start);
+
+            const groups = {};
+            let globalWorkMs = 0;
+            let globalOrders = 0;
+
+            allSessions.forEach(sess => {
+                if (!sess.timeline || sess.timeline.length === 0) return; // Safeguard against corrupted data
+
+                const firstEventTs = sess.timeline[0].start;
+                const d = new Date(firstEventTs);
+                const istOffset = 330;
+                const utcTime = d.getTime() + (d.getTimezoneOffset() * 60000);
+                const istDate = new Date(utcTime + (istOffset * 60000));
+
+                const year = istDate.getFullYear();
+                const month = istDate.toLocaleString('default', { month: 'long' });
+                const day = istDate.getDate();
+
+                if (!groups[year]) groups[year] = { months: {} };
+                if (!groups[year].months[month]) groups[year].months[month] = { days: {}, monthWorkMs: 0, monthOrders: 0 };
+                if (!groups[year].months[month].days[day]) groups[year].months[month].days[day] = { sessions: [], dayWorkMs: 0, dayBreakMs: 0, dayOrders: 0 };
+
+                const dayData = groups[year].months[month].days[day];
+                dayData.sessions.push(sess);
+                
+                let sessWorkMs = 0;
+                let sessBreakMs = 0;
+                sess.timeline.forEach(item => {
+                    const dur = (item.end || Date.now()) - item.start;
+                    if (item.type === 'WORK') sessWorkMs += dur;
+                    else sessBreakMs += dur;
+                });
+                const sessOrders = sess.count || 0;
+
+                dayData.dayWorkMs += sessWorkMs;
+                dayData.dayBreakMs += sessBreakMs;
+                dayData.dayOrders += sessOrders;
+
+                groups[year].months[month].monthWorkMs += sessWorkMs;
+                groups[year].months[month].monthOrders += sessOrders;
+
+                globalWorkMs += sessWorkMs;
+                globalOrders += sessOrders;
+            });
+
+            let html = '';
+            const globalArt = globalOrders > 0 ? ((globalWorkMs / 1000) / globalOrders).toFixed(1) : '--';
+            html += `
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-10">
+                    <div class="p-5 sm:p-6 bg-gradient-to-br from-blue-600/10 to-blue-900/10 border border-blue-500/20 rounded-[2rem] flex flex-col justify-center shadow-xl relative overflow-hidden">
+                        <div class="absolute -right-6 -top-6 text-blue-500/10 text-8xl"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        <div class="relative z-10">
+                            <p class="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Global Lifetime</p>
+                            <p class="text-sm sm:text-base font-bold text-white tracking-tight mt-0.5">Total Orders Logged</p>
+                            <div class="mt-3 sm:mt-4">
+                                <span class="text-4xl sm:text-5xl font-black text-white tracking-tighter drop-shadow-md">${globalOrders}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-5 sm:p-6 bg-gradient-to-br from-purple-600/10 to-purple-900/10 border border-purple-500/20 rounded-[2rem] flex flex-col justify-center shadow-xl relative overflow-hidden">
+                        <div class="absolute -right-6 -top-6 text-purple-500/10 text-8xl"><i class="fa-solid fa-stopwatch"></i></div>
+                        <div class="relative z-10">
+                            <p class="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Global Lifetime</p>
+                            <p class="text-sm sm:text-base font-bold text-white tracking-tight mt-0.5">Average Review Time</p>
+                            <div class="mt-3 sm:mt-4">
+                                <span class="text-4xl sm:text-5xl font-black text-white tracking-tighter drop-shadow-md">${globalArt}<span class="text-lg sm:text-xl text-purple-400 ml-1">sec</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+            Object.keys(groups).sort((a,b)=>b-a).forEach(year => {
+                html += `<div class="mb-8"><h3 class="text-xl font-black text-slate-300 mb-4 ml-2 border-b border-white/5 pb-2"><i class="fa-regular fa-calendar-days mr-2 text-slate-500"></i>${year}</h3>`;
+                
+                Object.keys(groups[year].months).sort((a,b) => monthOrder.indexOf(b) - monthOrder.indexOf(a)).forEach(month => {
+                    const monthData = groups[year].months[month];
+                    const monthArt = monthData.monthOrders > 0 ? ((monthData.monthWorkMs / 1000) / monthData.monthOrders).toFixed(1) : '--';
+                    
+                    html += `<div class="ml-2 mb-8">
+                                <div class="flex justify-between items-center mb-6 pl-3 pr-4 py-2.5 bg-white/[0.03] rounded-xl border border-white/5 shadow-inner">
+                                    <h4 class="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                        <i class="fa-solid fa-calendar-week text-slate-500"></i> ${month}
+                                    </h4>
+                                    <span class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-3 py-1 rounded-lg shadow-[0_0_10px_rgba(168,85,247,0.15)]">Month ART: ${monthArt}s</span>
+                                </div>`;
+                    
+                    Object.keys(monthData.days).sort((a,b)=>b-a).forEach(day => {
+                        const dayData = monthData.days[day];
+                        const dayArt = dayData.dayOrders > 0 ? ((dayData.dayWorkMs / 1000) / dayData.dayOrders).toFixed(1) : '--';
+                        let allDayEvents = [];
+                        
+                        dayData.sessions.forEach((sess) => {
+                            const sessStartTs = sess.timeline[0].start; 
+                            const sessOrders = sess.count || 0;
+                            const workBlocks = sess.timeline.filter(t => t.type === 'WORK');
+                            
+                            sess.timeline.forEach(item => {
+                                let blockOrders = item.count;
+                                if (blockOrders === undefined && item.type === 'WORK') {
+                                    blockOrders = workBlocks.length === 1 ? sessOrders : '?';
+                                }
+                                allDayEvents.push({ ...item, sessStartTs, blockOrders });
+                            });
+                        });
+
+                        allDayEvents.sort((a, b) => b.start - a.start);
+                        let dayEventsHtml = '<div class="space-y-3">';
+                        allDayEvents.forEach(item => {
+                            const endTs = item.end || Date.now();
+                            const durMs = endTs - item.start;
+                            
+                            const icon = item.type === 'WORK' ? '<i class="fa-solid fa-briefcase"></i>' : '<i class="fa-solid fa-mug-hot"></i>';
+                            const color = item.type === 'WORK' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' : 'text-orange-400 bg-orange-500/10 border-orange-500/20';
+                            const label = item.type === 'WORK' ? 'Working' : 'Break';
+                            const timeStr = `${formatISTTimeStr(item.start, item.sessStartTs)} - ${item.end ? formatISTTimeStr(item.end, item.sessStartTs) : '<span class="text-green-400 animate-pulse">Ongoing</span>'}`;
+                            const ordersBadge = item.type === 'WORK' && item.blockOrders !== '?' && item.blockOrders != null ? `<span class="ml-2 sm:ml-3 text-[9px] font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">${item.blockOrders} Orders</span>` : '';
+                            
+                            dayEventsHtml += `
+                                <div class="flex items-center gap-4 p-3 sm:p-4 rounded-xl border ${color} bg-opacity-50 hover:bg-white/[0.02] transition-colors">
+                                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0 shadow-inner text-xs sm:text-sm">${icon}</div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center">
+                                            <p class="text-[11px] sm:text-xs font-bold text-white uppercase tracking-wider">${label}</p>
+                                            ${ordersBadge}
+                                        </div>
+                                        <p class="text-[9px] sm:text-[11px] text-slate-400 mt-1">${timeStr}</p>
+                                    </div>
+                                    <div class="text-right shrink-0">
+                                        <span class="text-xs sm:text-sm font-black tracking-tight">${formatDurStr(durMs)}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        dayEventsHtml += '</div>';
+                        
+                        html += `
+                            <div class="ml-4 mb-8 border-l-2 border-white/10 pl-6 relative">
+                                <div class="absolute -left-[10px] top-1 w-5 h-5 rounded-full bg-slate-900 border-[3px] border-blue-500 z-10 shadow-[0_0_10px_rgba(59,130,246,0.3)]"></div>
+                                <div class="flex flex-col lg:flex-row lg:justify-between lg:items-end mb-4 gap-3">
+                                    <div class="flex flex-col gap-1.5">
+                                        <h5 class="text-base font-black text-white uppercase tracking-widest">${month} ${day}</h5>
+                                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-white/5 self-start px-2.5 py-1 rounded-md border border-white/5">Orders Logged: <span class="text-white">${dayData.dayOrders}</span></span>
+                                    </div>
+                                    <div class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex flex-wrap gap-2 sm:gap-3 bg-white/5 px-3 sm:px-4 py-2 rounded-xl border border-white/5">
+                                        <span class="text-blue-400 flex items-center gap-1.5"><i class="fa-solid fa-briefcase"></i> ${formatDurStr(dayData.dayWorkMs)}</span>
+                                        <span class="text-orange-400 flex items-center gap-1.5"><i class="fa-solid fa-mug-hot"></i> ${formatDurStr(dayData.dayBreakMs)}</span>
+                                        <span class="text-purple-400 flex items-center gap-1.5 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20"><i class="fa-solid fa-bolt"></i> ART: ${dayArt}s</span>
+                                    </div>
+                                </div>
+                                ${dayEventsHtml}
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                });
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
+        };
+
+        window.closeCongrats = () => {
+            const modal = document.getElementById('congratsModal');
+            if(modal) {
+                modal.style.opacity = '0';
+                modal.style.transform = 'scale(0.95)';
+                setTimeout(() => modal.classList.add('hidden'), 500);
+            }
+        };
+
+        const updateWorkUI = () => {
+            const loginBtn = document.getElementById('loginToggleBtn');
+            const breakBtn = document.getElementById('breakToggleBtn');
+            const card = document.getElementById('workCard');
+            const mainCounterBtn = document.getElementById('mainCounterBtn');
+            
+            if (workSession.status === 'LOGGED_OUT') {
+                if(loginBtn) {
+                    loginBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login';
+                    loginBtn.className = 'w-28 sm:w-32 px-4 sm:px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2';
+                }
+                if(breakBtn) breakBtn.classList.add('hidden');
+                if(card) card.classList.remove('glass-active');
+                if(mainCounterBtn) {
+                    mainCounterBtn.classList.add('disabled');
+                    mainCounterBtn.classList.remove('animate-pulse-glow', 'cursor-pointer');
+                }
+            } 
+            else if (workSession.status === 'WORKING') {
+                if(loginBtn) {
+                    loginBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
+                    loginBtn.className = 'w-28 sm:w-32 px-4 sm:px-6 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2';
+                }
+                if(breakBtn) {
+                    breakBtn.classList.remove('hidden');
+                    breakBtn.innerHTML = '<i class="fa-solid fa-mug-hot"></i> Break';
+                    breakBtn.className = 'w-28 sm:w-32 px-4 sm:px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2';
+                }
+                if(card) card.classList.add('glass-active');
+                if(mainCounterBtn) {
+                    mainCounterBtn.classList.remove('disabled');
+                    mainCounterBtn.classList.add('animate-pulse-glow', 'cursor-pointer');
+                }
+            } 
+            else if (workSession.status === 'ON_BREAK') {
+                if(loginBtn) {
+                    loginBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
+                    loginBtn.className = 'w-28 sm:w-32 px-4 sm:px-6 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2';
+                }
+                if(breakBtn) {
+                    breakBtn.classList.remove('hidden');
+                    breakBtn.innerHTML = '<i class="fa-solid fa-play"></i> Resume';
+                    breakBtn.className = 'w-28 sm:w-32 px-4 sm:px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2';
+                }
+                if(card) card.classList.add('glass-active');
+                if(mainCounterBtn) {
+                    mainCounterBtn.classList.add('disabled');
+                    mainCounterBtn.classList.remove('animate-pulse-glow', 'cursor-pointer');
+                }
+            }
+
+            // DAY'S GOAL: Compute today's total from all historical + active session
+            const todayStats = getTodayStats();
+
+            const countDisplay = document.getElementById('workCountDisplay');
+            if (countDisplay) {
+                const countStr = String(todayStats.todayOrders);
+                countDisplay.innerText = countStr;
+                
+                // Dynamic font scaling to prevent overflow in the circle
+                countDisplay.classList.remove('text-7xl', 'sm:text-8xl', 'text-6xl', 'sm:text-7xl', 'text-5xl', 'sm:text-6xl');
+                if (countStr.length <= 3) {
+                    countDisplay.classList.add('text-7xl', 'sm:text-8xl');
+                } else if (countStr.length === 4) {
+                    countDisplay.classList.add('text-6xl', 'sm:text-7xl');
+                } else {
+                    countDisplay.classList.add('text-5xl', 'sm:text-6xl');
+                }
+            }
+
+            const goal = workSession.goal || 100;
+            const progress = Math.min(100, (todayStats.todayOrders / goal) * 100);
+            const remaining = Math.max(0, goal - todayStats.todayOrders);
+            
+            const ring = document.getElementById('goalRing');
+            const offset = 301.59 - (progress / 100) * 301.59;
+            if(ring) ring.style.strokeDashoffset = offset;
+
+            const sProgressBar = document.getElementById('sessionProgressBar');
+            const sProgressText = document.getElementById('sessionProgressText');
+            const ordersLeftText = document.getElementById('ordersLeftText');
+
+            if (sProgressBar) sProgressBar.style.width = `${progress}%`;
+            if (sProgressText) sProgressText.innerText = `${progress.toFixed(2)}%`;
+            
+            if (ordersLeftText) {
+                if (remaining > 0) {
+                    ordersLeftText.innerHTML = `(<span class="text-slate-400">${remaining}</span> left to go)`;
+                } else {
+                    ordersLeftText.innerHTML = `(<span class="text-green-400">Goal reached!</span>)`;
+                }
+            }
+
+            // Goal Celebration Logic
+            if (todayStats.todayOrders >= goal && !workSession.hasReachedGoal && todayStats.todayOrders > 0) {
+                workSession.hasReachedGoal = true;
+                playSound('target');
+
+                const modal = document.getElementById('congratsModal');
+                if(modal) {
+                    const ct = document.getElementById('congratsTarget');
+                    if(ct) ct.innerText = goal;
+                    modal.classList.remove('hidden');
+                    setTimeout(() => {
+                        modal.style.opacity = '1';
+                        modal.style.transform = 'scale(1)';
+                        modal.style.pointerEvents = 'auto';
+                        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                    }, 10);
+                }
+                saveToCloud(); 
+            } else if (todayStats.todayOrders === 0 && workSession.hasReachedGoal) {
+                // Reset hasReachedGoal for a brand new day
+                workSession.hasReachedGoal = false;
+            }
+        };
+
+        setInterval(() => {
+            const todayStats = getTodayStats();
+            let totalSeconds = todayStats.todayWorkMs / 1000;
+
+            const timerDisplay = document.getElementById('timerDisplay');
+            if(timerDisplay) {
+                const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+                const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+                const s = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
+                timerDisplay.innerText = `${h}:${m}:${s}`;
+            }
+
+            const breakContainer = document.getElementById('breakTimerContainer');
+            if (breakContainer) {
+                const now = Date.now();
+                if (workSession.status === 'ON_BREAK' && workSession.lastPauseTime) {
+                    breakContainer.classList.remove('hidden');
+                    const breakSecs = Math.floor((now - workSession.lastPauseTime) / 1000);
+                    const bm = Math.floor(breakSecs / 60).toString().padStart(2, '0');
+                    const bs = (breakSecs % 60).toString().padStart(2, '0');
+                    const display = document.getElementById('breakTimerDisplay');
+                    if(display) display.innerText = `${bm}:${bs}`;
+                } else {
+                    breakContainer.classList.add('hidden');
+                }
+            }
+
+            if (window.currentPage === 'sessions') {
+                if (typeof window.updateSessionsPage === 'function') window.updateSessionsPage();
+            }
+
+            const istDate = getISTDate();
+            const currH = istDate.getHours();
+            const currM = istDate.getMinutes();
+            const currS = istDate.getSeconds();
+            const logoutContainer = document.getElementById('logoutTimerContainer');
+            
+            if (logoutContainer) {
+                if (currH >= 7 && currH < 9) {
+                    const target9AM = new Date(istDate);
+                    target9AM.setHours(9, 0, 0, 0);
+                    const diffMs = target9AM - istDate;
+                    const totalSecs = Math.floor(diffMs / 1000);
+                    const remH = Math.floor(totalSecs / 3600);
+                    const remM = Math.floor((totalSecs % 3600) / 60);
+                    const remS = totalSecs % 60;
+                    
+                    logoutContainer.classList.remove('hidden');
+                    
+                    let timeStr = '';
+                    if (remH > 0) timeStr += remH + 'h ';
+                    timeStr += remM + 'm ' + remS + 's';
+
+                    logoutContainer.innerHTML = `
+                        <div class="bg-orange-500/10 border border-orange-500/20 text-orange-400 px-4 py-2 rounded-xl flex items-center gap-2 shadow-[0_0_15px_rgba(249,115,22,0.15)]">
+                            <i class="fa-solid fa-clock animate-pulse"></i>
+                            <span class="text-[10px] font-black uppercase tracking-widest">${timeStr} to logout</span>
+                        </div>
+                    `;
+                    workSession.playedBuzzer = false; 
+                } else if (currH === 9 && currM < 30) {
+                    logoutContainer.classList.remove('hidden');
+                    logoutContainer.innerHTML = `
+                        <div class="bg-red-500/20 border border-red-500/40 px-4 py-2 rounded-xl flex items-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse">
+                            <i class="fa-solid fa-triangle-exclamation text-red-500"></i>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-white">PLEASE LOGOUT</span>
+                        </div>
+                    `;
+                    
+                    if (!workSession.playedBuzzer) {
+                        playSound('buzzer');
+                        workSession.playedBuzzer = true;
+                    }
+                } else {
+                    logoutContainer.classList.add('hidden');
+                    if (currH > 9) workSession.playedBuzzer = false; 
+                }
+            }
+
+            const count = todayStats.todayOrders;
+            const badge = document.getElementById('speedBadge');
+            
+            if (badge) {
+                if (count > 0 && totalSeconds > 5) {
+                    const art = totalSeconds / count;
+                    const artDisplay = document.getElementById('artDisplay');
+                    if(artDisplay) artDisplay.innerText = `${art.toFixed(1)} sec`;
+
+                    const speed = (count / totalSeconds) * 3600;
+                    
+                    badge.classList.remove('hidden');
+                    let currentSpeedState = speed >= 150 ? 'onTrack' : 'offTrack';
+
+                    if (currentSpeedState === 'onTrack') {
+                        badge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-green-500/20 text-green-400 border border-green-500/30 shadow-md';
+                        badge.innerText = `On Track (${Math.round(speed)}/hr)`;
+                    } else {
+                        badge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30 shadow-md';
+                        badge.innerText = `Off Track (${Math.round(speed)}/hr)`;
+                    }
+
+                    if (workSession.status === 'WORKING' && totalSeconds > 10) {
+                        if (lastSpeedState !== 'ready' && lastSpeedState !== currentSpeedState) {
+                            playSound(currentSpeedState);
+                        }
+                        lastSpeedState = currentSpeedState;
+                    }
+                } else {
+                    const artDisplay = document.getElementById('artDisplay');
+                    if(artDisplay) artDisplay.innerText = '-- sec';
+                    badge.classList.add('hidden');
+                }
+            }
+        }, 100);
+
+        window.clearDayData = async (date) => {
+            const m = months.find(m => m.id === activeMonthId);
+            if (!m) return;
+            const day = m.days.find(d => d.date === date);
+            
+            // Only clear the calendar input boxes for this specific day
+            day.premiumOrders = 0;
+            day.regularOrders = 0;
+            day.errors = 0;
+            day.orders = 0; 
+            
+            // We intentionally DO NOT clear the live work session or historical data here 
+            // so the big counter and active timer stay intact.
+
+            updateUI();
+            saveToCloud();
+        };
+
+        const renderMonthSelector = () => {
+            const selector = document.getElementById('monthSelector');
+            if (!selector) return;
+            selector.innerHTML = months.map(m => `<option value="${m.id}" ${m.id === activeMonthId ? 'selected' : ''}>${m.id}</option>`).join('');
+            selector.onchange = (e) => {
+                activeMonthId = e.target.value;
+                updateUI();
+            };
+        };
+
+        const renderChart = (m, currentMonthlyGoal) => {
+            const canvas = document.getElementById('trajectoryChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            // Required total orders for this specific month's target
+            const targetOrders = getRequiredOrdersForNet(currentMonthlyGoal, 0, 0);
+            
+            const labels = [];
+            const targetData = [];
+            const actualData = [];
+            
+            let cumulativeActual = 0;
+            
+            const ist = getISTDate();
+            const isThisMonth = ist.getMonth() === m.monthIdx && ist.getFullYear() === m.year;
+            const isPastMonth = (ist.getFullYear() > m.year) || (ist.getFullYear() === m.year && ist.getMonth() > m.monthIdx);
+            const currentDay = ist.getDate();
+            
+            const daysInMonth = m.days.length;
+            const dailyTargetIncrement = targetOrders / daysInMonth;
+
+            for (let i = 0; i < daysInMonth; i++) {
+                const dayObj = m.days[i];
+                const d = dayObj.date;
+                labels.push(d);
+                
+                // Solid flat line increment target trajectory
+                targetData.push(Math.round(dailyTargetIncrement * d));
+                
+                // Calculate Actual Cumulative up to today
+                const legacyOrders = Number(dayObj.orders) || 0;
+                const pOrders = dayObj.premiumOrders !== undefined ? Number(dayObj.premiumOrders) : (dayObj.isRegular ? 0 : legacyOrders);
+                const rOrders = dayObj.regularOrders !== undefined ? Number(dayObj.regularOrders) : (dayObj.isRegular ? legacyOrders : 0);
+                const dailyTotal = pOrders + rOrders;
+                
+                if (isPastMonth || (isThisMonth && d <= currentDay)) {
+                    cumulativeActual += dailyTotal;
+                    actualData.push(cumulativeActual);
+                } else {
+                    // For future days in the current month, don't draw the actual line so it terminates dynamically
+                    actualData.push(null); 
+                }
+            }
+
+            if (window.trajectoryChartInstance) {
+                window.trajectoryChartInstance.destroy();
+            }
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.parentElement.offsetHeight);
+            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); // blue-500
+            gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+            window.trajectoryChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Your Actual Trajectory',
+                            data: actualData,
+                            borderColor: '#3b82f6', // blue-500
+                            backgroundColor: gradient,
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#020617',
+                            pointBorderColor: '#3b82f6',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            spanGaps: false 
+                        },
+                        {
+                            label: 'Target Trajectory',
+                            data: targetData,
+                            borderColor: '#eab308', // yellow-500
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0,
+                            pointRadius: 0,
+                            pointHoverRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } } },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#f8fafc',
+                            bodyColor: '#cbd5e1',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            boxPadding: 4,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toLocaleString() + ' Orders';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { family: 'Inter' } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { family: 'Inter' } }, beginAtZero: true }
+                    }
+                }
+            });
+        };
+
+        const updateUI = () => {
+            const m = months.find(m => m.id === activeMonthId);
+            if (!m) return;
+            
+            // Goal logic specifically tied to the active month selected
+            const currentMonthlyGoal = m.goal || monthlyGoal; 
+
+            const ist = getISTDate();
+            const isThisMonth = ist.getMonth() === m.monthIdx && ist.getFullYear() === m.year;
+            const currentDay = ist.getDate();
+            const lastDay = m.days.length;
+
+            const calcPeriod = (days, isP1, targetNet) => {
+                let rawPremium = 0;
+                let rawRegular = 0;
+                let totalErrors = 0;
+
+                days.forEach(d => {
+                    const legacyOrders = Number(d.orders) || 0;
+                    const pOrders = d.premiumOrders !== undefined ? Number(d.premiumOrders) : (d.isRegular ? 0 : legacyOrders);
+                    const rOrders = d.regularOrders !== undefined ? Number(d.regularOrders) : (d.isRegular ? legacyOrders : 0);
+
+                    rawPremium += pOrders;
+                    rawRegular += rOrders;
+                    totalErrors += Number(d.errors) || 0;
+                });
+
+                // Shift first 1000 orders to premium
+                let premiumOrders = rawPremium;
+                let regularOrders = rawRegular;
+                if (premiumOrders < 1000 && regularOrders > 0) {
+                    const shift = Math.min(1000 - premiumOrders, regularOrders);
+                    premiumOrders += shift;
+                    regularOrders -= shift;
+                }
+
+                const totalOrders = premiumOrders + regularOrders;
+                const baseEarnings = calculateTieredEarnings(premiumOrders) + (regularOrders * 1);
+                const net = baseEarnings * getDeductionMultiplier(totalErrors) * 0.9;
+                const req = getRequiredOrdersForNet(targetNet, totalErrors, regularOrders);
+                const left = Math.max(0, req - totalOrders);
+                const percent = targetNet > 0 ? Math.min(100, (net / targetNet) * 100) : (net > 0 ? 100 : 0);
+                const achieved = net >= targetNet;
+                
+                let daysLeft = 0;
+                let status = "ACTIVE";
+                let statusColor = "text-blue-500";
+                let isCurrentPhase = false;
+
+                if (isThisMonth) {
+                    if (isP1) {
+                        if (currentDay > 15) { status = "ENDED"; statusColor = "text-slate-500"; }
+                        else { daysLeft = 15 - currentDay + 1; isCurrentPhase = true; }
+                    } else {
+                        if (currentDay < 16) { 
+                            const diff = 16 - currentDay;
+                            status = `IN ${diff} DAYS`;
+                            statusColor = "text-purple-400";
+                        } else { daysLeft = lastDay - currentDay + 1; isCurrentPhase = true; }
+                    }
+                } else if (ist > new Date(m.year, m.monthIdx, isP1 ? 15 : lastDay)) {
+                    status = "ENDED"; statusColor = "text-slate-500";
+                } else {
+                    status = "UPCOMING"; statusColor = "text-purple-400";
+                }
+
+                const pace = Math.ceil(left / Math.max(1, daysLeft));
+                const title = isP1 ? `${m.name} 01 - 15` : `${m.name} 16 - ${lastDay}`;
+
+                return { orders: totalOrders, premiumOrders, regularOrders, errors: totalErrors, net, req, left, achieved, pace, status, statusColor, percent, daysLeft, title, isCurrentPhase };
+            };
+
+            const p1Target = currentMonthlyGoal / 2;
+            const p1 = calcPeriod(m.days.filter(d => d.date <= 15), true, p1Target);
+            
+            const p2Target = Math.max(0, currentMonthlyGoal - p1.net);
+            const p2 = calcPeriod(m.days.filter(d => d.date > 15), false, p2Target);
+            
+            const totalNet = p1.net + p2.net;
+            
+            if (currentDay > 15) {
+                updateMultiplierBadge(p2.premiumOrders, isThisMonth);
+            } else {
+                updateMultiplierBadge(p1.premiumOrders, isThisMonth);
+            }
+
+            const headerGoalText = document.getElementById('headerGoalText');
+            if(headerGoalText) headerGoalText.innerText = formatCurrency(currentMonthlyGoal);
+            
+            const totalNetDisplay = document.getElementById('totalNetDisplay');
+            if(totalNetDisplay) totalNetDisplay.innerText = formatCurrency(totalNet);
+            
+            const monthlyGoalDisplay = document.getElementById('monthlyGoalDisplay');
+            if(monthlyGoalDisplay) monthlyGoalDisplay.innerText = `/ ${formatCurrency(currentMonthlyGoal)} NET`;
+            
+            const totalPercent = Math.min(100, (totalNet / currentMonthlyGoal) * 100);
+            
+            const mainProgressBar = document.getElementById('mainProgressBar');
+            if(mainProgressBar) mainProgressBar.style.width = `${totalPercent}%`;
+            
+            const percentDone = document.getElementById('percentDone');
+            if(percentDone) percentDone.innerText = `${totalPercent.toFixed(2)}% Done`;
+            
+            const statusIcon = document.getElementById('statusIcon');
+            if(statusIcon) {
+                statusIcon.innerHTML = totalNet >= currentMonthlyGoal 
+                    ? '<i class="fa-solid fa-trophy text-yellow-500 text-xl"></i>' 
+                    : '<i class="fa-solid fa-bolt-lightning text-blue-400 text-xl"></i>';
+            }
+
+            updatePeriodCard('P1', p1);
+            updatePeriodCard('P2', p2);
+            renderTable(m, currentDay, isThisMonth);
+            updateHeaderIcons();
+            
+            // Draw Chart for specifically this month's data!
+            renderChart(m, currentMonthlyGoal);
+        };
+
+        const updatePeriodCard = (id, data) => {
+            const titleEl = document.getElementById(`title${id}`);
+            if(titleEl) titleEl.innerText = data.title;
+            
+            const netEl = document.getElementById(`net${id}`);
+            if(netEl) netEl.innerText = formatCurrency(data.net);
+            
+            const errEl = document.getElementById(`errors${id}`);
+            if(errEl) errEl.innerText = data.errors;
+            
+            const ordEl = document.getElementById(`orders${id}`);
+            if(ordEl) ordEl.innerText = data.orders.toLocaleString();
+            
+            const reqEl = document.getElementById(`req${id}`);
+            if(reqEl) reqEl.innerText = (data.req === Infinity || isNaN(data.req)) ? 'N/A' : data.req.toLocaleString();
+            
+            const barEl = document.getElementById(`bar${id}`);
+            if(barEl) barEl.style.width = `${data.percent}%`;
+            
+            const pEl = document.getElementById(`percent${id}`);
+            if(pEl) pEl.innerText = `${data.percent.toFixed(2)}%`;
+            
+            const badgeEl = document.getElementById(`statusBadge${id}`);
+            if(badgeEl) badgeEl.innerHTML = `<span class="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-white/5 border border-white/5 ${data.statusColor}">${data.status}</span>`;
+
+            const footer = document.getElementById(`footer${id}`);
+            const metrics = document.getElementById(`metrics${id}`);
+            const isInactive = data.status.includes("DAYS") || data.status === "TOMORROW" || data.status === "UPCOMING";
+
+            if(metrics && footer) {
+                if (isInactive) {
+                    metrics.classList.add('opacity-20', 'grayscale');
+                    footer.innerHTML = `<span class="text-[9px] font-black text-slate-600 uppercase tracking-widest">Upcoming Period</span>`;
+                } else if (data.status === "ENDED") {
+                    metrics.classList.remove('opacity-20', 'grayscale');
+                    footer.innerHTML = ``; 
+                } else {
+                    metrics.classList.remove('opacity-20', 'grayscale');
+                    footer.innerHTML = `
+                        <div class="flex flex-col">
+                            <span class="text-[9px] font-black text-slate-600 uppercase tracking-tighter">Daily Target Pace</span>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <span class="text-xs font-black text-blue-400">${data.pace || 0}</span>
+                                <span class="text-[8px] font-bold text-blue-400/60 uppercase">/day</span>
+                            </div>
+                        </div>
+                        ${data.isCurrentPhase ? `
+                        <div class="text-right">
+                            <span class="text-[9px] font-black text-slate-600 uppercase tracking-tighter">Deadline</span>
+                            <div class="text-[10px] font-black text-blue-500 uppercase mt-0.5">${data.daysLeft} Days Left</div>
+                        </div>` : ''}
+                    `;
+                }
+            }
+
+            const trophy = document.getElementById(`trophy${id}`);
+            if(trophy) data.achieved ? trophy.classList.remove('hidden') : trophy.classList.add('hidden');
+        };
+
+        const renderTable = (m, todayDay, isThisMonth) => {
+            const container = document.getElementById('calendarContainer');
+            if (!container) return;
+            
+            let firstHalfHtml = '<div class="mb-8"><div class="flex items-center gap-2 mb-4 px-2"><i class="fa-solid fa-moon text-blue-500 text-sm"></i><h4 class="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-[0.2em]">First Half <span class="text-slate-500 font-bold ml-1">(1-15)</span></h4></div><div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">';
+            
+            let secondHalfHtml = '<div><div class="flex items-center gap-2 mb-4 px-2 mt-4"><i class="fa-regular fa-moon text-purple-500 text-sm"></i><h4 class="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-[0.2em]">Second Half <span class="text-slate-500 font-bold ml-1">(16-End)</span></h4></div><div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">';
+            
+            m.days.forEach((day) => {
+                const isToday = isThisMonth && day.date === todayDay;
+                
+                // Determine day of week to highlight Sundays
+                const dateObj = new Date(m.year, m.monthIdx, day.date);
+                const isSunday = dateObj.getDay() === 0;
+                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                
+                const legacyOrders = Number(day.orders) || '';
+                const pVal = day.premiumOrders !== undefined ? (day.premiumOrders || '') : (day.isRegular ? '' : legacyOrders);
+                const rVal = day.regularOrders !== undefined ? (day.regularOrders || '') : (day.isRegular ? legacyOrders : '');
+                
+                const hasData = Number(pVal) > 0 || Number(rVal) > 0 || Number(day.errors) > 0;
+
+                const cellHtml = `
+                    <div class="relative p-3 sm:p-4 rounded-2xl border transition-all duration-300 ${isToday ? 'bg-blue-500/10 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)] ring-1 ring-blue-500' : (isSunday ? 'bg-red-500/5 border-red-500/20' : 'bg-white/[0.02] border-white/5 hover:border-white/10 hover:bg-white/[0.04]')}">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex flex-col">
+                                <span class="text-sm sm:text-base font-black leading-none ${isSunday ? 'text-red-400' : (isToday ? 'text-blue-400' : 'text-slate-150')}">${day.date}</span>
+                                <span class="text-[9px] font-bold uppercase tracking-widest mt-1 ${isSunday ? 'text-red-500/70' : 'text-slate-500'}">${dayName}</span>
+                            </div>
+                            ${hasData ? `<button onclick="window.clearDayData(${day.date})" class="w-6 h-6 rounded-full bg-red-500/10 hover:bg-red-500 hover:shadow-[0_0_10px_rgba(239,68,68,0.5)] text-red-400 hover:text-white flex items-center justify-center transition-all group" title="Clear Day"><i class="fa-solid fa-trash-can text-[9px] group-hover:scale-110 transition-transform"></i></button>` : `<div class="w-6 h-6 flex items-center justify-center"><div class="w-1 h-1 rounded-full ${isSunday ? 'bg-red-500/20' : 'bg-white/10'}"></div></div>`}
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <div class="relative">
+                                <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-black text-purple-400 uppercase tracking-wider">Prem</span>
+                                <input type="number" onblur="window.updateDayData(${day.date}, 'premiumOrders', this.value)" value="${pVal}" class="w-full bg-[#020617]/50 border border-white/5 rounded-lg py-2 pl-10 pr-2 text-xs font-black text-purple-100 text-right focus:border-purple-500 focus:bg-purple-500/5 outline-none transition-all placeholder:text-slate-700" placeholder="0">
+                            </div>
+                            <div class="relative">
+                                <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-400 uppercase tracking-wider">Reg</span>
+                                <input type="number" onblur="window.updateDayData(${day.date}, 'regularOrders', this.value)" value="${rVal}" class="w-full bg-[#020617]/50 border border-white/5 rounded-lg py-2 pl-10 pr-2 text-xs font-black text-slate-200 text-right focus:border-slate-500 focus:bg-white/5 outline-none transition-all placeholder:text-slate-700" placeholder="0">
+                            </div>
+                            <div class="relative pt-1 border-t border-white/5 mt-1">
+                                <span class="absolute left-2 top-[calc(50%+2px)] -translate-y-1/2 text-[8px] font-black text-red-400 uppercase tracking-wider">Err</span>
+                                <input type="number" onblur="window.updateDayData(${day.date}, 'errors', this.value)" value="${day.errors || ''}" class="w-full bg-[#020617]/50 border border-white/5 rounded-lg py-2 pl-10 pr-2 text-xs font-black text-right outline-none transition-all placeholder:text-slate-700 ${Number(day.errors) > 0 ? 'text-red-400 border-red-500/30 bg-red-500/5' : 'text-slate-500 focus:border-red-500 focus:bg-red-500/5'}" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (day.date <= 15) {
+                    firstHalfHtml += cellHtml;
+                } else {
+                    secondHalfHtml += cellHtml;
+                }
+            });
+
+            firstHalfHtml += '</div></div>';
+            secondHalfHtml += '</div></div>';
+
+            container.innerHTML = firstHalfHtml + secondHalfHtml;
+        };
+
+        const startup = async () => {
+            // (0) IMMEDIATE LOCAL BOOT (Instant Screen Load)
+            try {
+                const legacy = localStorage.getItem('ep_cache');
+                if (legacy) {
+                    const parsed = JSON.parse(legacy);
+                    if (parsed.months) months = parsed.months;
+                    if (parsed.monthlyGoal) monthlyGoal = parsed.monthlyGoal;
+                    if (parsed.workSession) workSession = parsed.workSession;
+                    if (parsed.historicalSessions) historicalSessions = parsed.historicalSessions;
+                }
+            } catch(e) {}
+            
+            syncMonths(); 
+
+            const ist = getISTDate();
+            const istId = `${MONTH_NAMES[ist.getMonth()]}-${ist.getFullYear() % 100}`;
+            activeMonthId = months.find(m => m.id === istId) ? istId : months[months.length - 1].id;
+            
+            renderMonthSelector();
+            updateUI();
+            if (typeof updateWorkUI === 'function') updateWorkUI();
+
+            // (1) Establish direct Firebase listener aggressively (Bypasses Auth blocks completely)
+            setupLiveSync();
+
+            // (2) Optional Auth (Only for user analytics if enabled in console, entirely optional)
+            try {
+                signInAnonymously(auth).catch(() => console.warn("Anon Auth skipped."));
+            } catch (e) {}
+        };
+
+        startup();
+
+        // Global Bridges
+        window.togglePrivacy = () => {
+            isMasked = !isMasked;
+            localStorage.setItem('earnings_privacy_masked', isMasked);
+            updateHeaderIcons();
+            updateUI();
+        };
+
+        window.copyEmail = () => {
+            const email = 'shubham.badgujar@cimpressgraphics.com';
+            const el = document.createElement('textarea');
+            el.value = email;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            
+            // Show temporary success checkmark
+            const btn = document.querySelector('button[title="Copy Email"]');
+            if (btn) {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check text-green-400 text-xs"></i>';
+                setTimeout(() => btn.innerHTML = originalHtml, 2000);
+            }
+        };
+
+        window.updateDayData = async (date, field, value) => {
+            const m = months.find(m => m.id === activeMonthId);
+            if (!m) return;
+            const day = m.days.find(d => d.date === date);
+            day[field] = Number(value) || 0;
+            updateUI();
+            saveToCloud();
+        };
+
+        window.toggleModal = (show) => {
+            const modal = document.getElementById('goalModal');
+            if (modal) modal.classList.toggle('hidden', !show);
+            if(show) {
+                const m = months.find(m => m.id === activeMonthId);
+                const gi = document.getElementById('goalInput');
+                if(gi) gi.value = m && m.goal ? m.goal : monthlyGoal;
+            }
+        };
+
+        window.saveGoal = async () => {
+            const input = document.getElementById('goalInput');
+            if(input) {
+                const newGoal = Number(input.value) || 50000;
+                const m = months.find(m => m.id === activeMonthId);
+                if (m) m.goal = newGoal; // Sets it for the specific month
+                monthlyGoal = newGoal; // Keep as global fallback
+            }
+            updateUI();
+            toggleModal(false);
+            saveToCloud();
+        };
+
+        setInterval(() => {
+            const clock = document.getElementById('istClock');
+            if (clock) clock.innerText = `IST: ${getISTDate().toLocaleTimeString()}`;
+        }, 1000);
+    </script>
+</body>
+</html>
