@@ -582,11 +582,12 @@
             const el = document.getElementById('syncStatus');
             if(!el) return;
             if (state === 'live') {
-                el.innerHTML = '<i class="fa-solid fa-cloud text-green-400"></i> <span class="text-green-400">Live</span>';
+                el.innerHTML = '<i class="fa-solid fa-cloud text-green-400"></i> <span class="text-green-400">Live</span>'; el.title = 'Connected to Firebase';
             } else if (state === 'syncing') {
-                el.innerHTML = '<i class="fa-solid fa-arrows-rotate text-blue-400 animate-spin"></i> <span class="text-blue-400">Syncing</span>';
+                el.innerHTML = '<i class="fa-solid fa-arrows-rotate text-blue-400 animate-spin"></i> <span class="text-blue-400">Syncing</span>'; el.title = 'Syncing with Firebase';
             } else if (state === 'error') {
-                el.innerHTML = '<i class="fa-solid fa-cloud-xmark text-red-500"></i> <span class="text-red-500">Blocked</span>';
+                el.innerHTML = '<i class="fa-solid fa-cloud-xmark text-red-500"></i> <span class="text-red-500">Firebase Error</span>';
+                el.title = 'Firebase is not connected. Check Authentication and Firestore rules.';
             } else {
                 el.innerHTML = '<i class="fa-solid fa-cloud text-slate-500"></i> Local';
             }
@@ -822,17 +823,22 @@
             months.sort((a, b) => (a.year * 12 + a.monthIdx) - (b.year * 12 + b.monthIdx));
         };
 
-        const getSyncDoc = () => doc(db, 'artifacts', appId, 'public', 'data', 'appState', 'singleton');
+
 
         const saveToCloud = async () => {
             updateSyncStatus('syncing');
             const cleanData = JSON.parse(JSON.stringify({ months, monthlyGoal, workSession, historicalSessions, lastSync: new Date().toISOString() }));
             localStorage.setItem('ep_cache', JSON.stringify(cleanData));
             try {
+                if (!currentUser) {
+                    updateSyncStatus('error');
+                    console.warn('Cloud save skipped because Firebase authentication is not available.');
+                    return;
+                }
                 await setDoc(getSyncDoc(), cleanData, { merge: true });
                 updateSyncStatus('live');
             } catch (e) {
-                console.warn('Cloud sync unavailable; local data is preserved.', e);
+                console.error('Firebase Firestore save failed:', e);
                 updateSyncStatus('error');
             }
         };
@@ -1880,6 +1886,34 @@
             await saveToCloud();
         };
 
+        // Firebase authentication must complete BEFORE the Firestore listener is attached.
+        // The previous version attached onSnapshot while unauthenticated and then silently
+        // called signInAnonymously afterwards. If Firestore rules require auth, that listener
+        // immediately failed and the app stayed on the local fallback forever.
+        let unsubscribeLiveSync = null;
+        let authStarted = false;
+        let cloudAttempted = false;
+
+        const startCloudSync = () => {
+            if (cloudAttempted) return;
+            cloudAttempted = true;
+            try {
+                if (unsubscribeLiveSync) unsubscribeLiveSync();
+            } catch (_) {}
+            unsubscribeLiveSync = setupLiveSync();
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user || null;
+            if (user) {
+                updateSyncStatus('syncing');
+                startCloudSync();
+            } else if (authStarted) {
+                updateSyncStatus('error');
+                console.warn('Firebase authentication is not active. Enable Anonymous sign-in in Firebase Authentication, or use Firestore rules that allow unauthenticated access.');
+            }
+        });
+
         const startup = async () => {
             try {
                 const legacy = localStorage.getItem('ep_cache');
@@ -1895,12 +1929,23 @@
             syncMonths();
             const ist = getISTDate();
             const currentId = `${MONTH_NAMES[ist.getMonth()]}-${ist.getFullYear() % 100}`;
-            activeMonthId = months.some(m => m.id === currentId) ? currentId : months[months.length - 1].id;
+            activeMonthId = months.some(m => m.id === currentId) ? currentId : months[months.length - 1]?.id;
             renderMonthSelector();
             updateUI();
-            setupLiveSync();
 
-            try { signInAnonymously(auth).catch(() => {}); } catch (e) {}
+            authStarted = true;
+            updateSyncStatus('syncing');
+            try {
+                await signInAnonymously(auth);
+                // onAuthStateChanged will start the listener.
+            } catch (e) {
+                console.error('Firebase anonymous authentication failed:', e);
+                updateSyncStatus('error');
+                // Do not wipe local data. The app remains usable locally.
+                syncMonths();
+                renderMonthSelector();
+                updateUI();
+            }
         };
 
         startup();
