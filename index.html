@@ -1905,19 +1905,7 @@
                 <div class="flex items-center gap-2 mb-4 px-2 mt-4"><i class="fa-regular fa-moon text-purple-500 text-sm"></i><h4 class="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-[0.2em]">Second Half <span class="text-slate-500 font-bold ml-1">(16-End)</span></h4></div>
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">`;
 
-            // Build the speed cycle cumulatively inside each half-month.
-            // This is intentionally calculated before rendering so every day shows
-            // the tier reached by the total orders accumulated from day 1 or 16.
-            let halfMonthOrders = 0;
-
             m.days.forEach(day => {
-                if (Number(day.date) === 1 || Number(day.date) === 16) halfMonthOrders = 0;
-
-                const dayPremiumForSpeed = Number(day.premiumOrders) || 0;
-                const dayRegularForSpeed = Number(day.regularOrders) || 0;
-                const dayLegacyForSpeed = day.premiumOrders === undefined && day.regularOrders === undefined ? (Number(day.orders) || 0) : 0;
-                halfMonthOrders += dayPremiumForSpeed + dayRegularForSpeed + dayLegacyForSpeed;
-
                 const isToday = isThisMonth && day.date === todayDay;
                 const dateObj = new Date(m.year, m.monthIdx, day.date);
                 const isSunday = dateObj.getDay() === 0;
@@ -1945,7 +1933,6 @@
                         <button onclick="window.toggleDaySpecialPay(${day.date})" class="w-full mb-2 px-2.5 py-1.5 rounded-lg border text-[8px] font-black uppercase tracking-wider transition-all ${specialOn ? 'bg-yellow-400/15 border-yellow-400/40 text-yellow-300' : 'bg-white/[0.02] border-white/5 text-slate-600 hover:text-yellow-300 hover:border-yellow-400/20'}">
                             <i class="fa-solid fa-star mr-1"></i>${specialOn ? `Special Pay ON · ₹${rate}/order` : 'Special Pay OFF'}
                         </button>
-                        ${(() => { const speed = getSpeedInfo(halfMonthOrders, specialOn); return `<div class="flex items-center justify-between gap-2 mb-2 px-1"><span class="speed-tier-badge ${speed.key}">${speed.label}</span><span class="speed-next text-right">${speed.next}</span></div><div class="text-[7px] font-bold text-slate-600 text-right uppercase tracking-wider mb-1">Half-month total: ${halfMonthOrders.toLocaleString()}</div>`; })()}
                         <div class="space-y-2">
                             <div class="relative"><span class="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-black text-purple-400 uppercase tracking-wider">Prem</span><input type="number" min="0" onblur="window.updateDayData(${day.date}, 'premiumOrders', this.value)" value="${pVal}" class="w-full bg-[#020617]/50 border border-white/5 rounded-lg py-2 pl-10 pr-2 text-xs font-black text-purple-100 text-right focus:border-purple-500 outline-none" placeholder="0"></div>
                             <div class="relative"><span class="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-400 uppercase tracking-wider">Reg</span><input type="number" min="0" onblur="window.updateDayData(${day.date}, 'regularOrders', this.value)" value="${rVal}" class="w-full bg-[#020617]/50 border border-white/5 rounded-lg py-2 pl-10 pr-2 text-xs font-black text-slate-200 text-right focus:border-slate-500 outline-none" placeholder="0"></div>
