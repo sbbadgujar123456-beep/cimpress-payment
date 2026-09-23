@@ -143,6 +143,22 @@
             border: 1px solid rgba(255,255,255,.06);
         }
         #monthlyGoalChart { width: 100%; height: 330px; display: block; }
+        #monthSelector {
+            color: #f8fafc;
+            background: #0b1224;
+            color-scheme: dark;
+            border: 0;
+            outline: none;
+        }
+        #monthSelector option {
+            background: #0b1224;
+            color: #f8fafc;
+        }
+        .special-pay-active {
+            border-color: rgba(250, 204, 21, .45) !important;
+            background: rgba(250, 204, 21, .07) !important;
+            box-shadow: 0 0 20px rgba(250, 204, 21, .08);
+        }
         .chart-tooltip {
             position: absolute;
             z-index: 5;
@@ -206,16 +222,6 @@
                     <i class="fa-regular fa-envelope text-slate-400 text-xs group-hover:text-blue-400 transition-colors"></i>
                 </button>
 
-                <!-- Session Logs Toggle -->
-                <button onclick="switchPage(currentPage === 'home' ? 'sessions' : 'home')" class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
-                    <i id="navSessionIcon" class="fa-solid fa-list-ul text-slate-400 text-xs hover:text-white transition-colors"></i>
-                </button>
-
-                <!-- Sound Mute Toggle -->
-                <button onclick="toggleMute()" id="muteToggle" class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
-                    <i id="muteIcon" class="fa-solid fa-volume-high text-slate-400 text-xs hover:text-white transition-colors"></i>
-                </button>
-
                 <!-- Privacy Toggle -->
                 <button onclick="togglePrivacy()" id="privacyToggle" class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
                     <i id="privacyIcon" class="fa-solid fa-eye text-slate-400 text-xs hover:text-white transition-colors"></i>
@@ -240,113 +246,6 @@
 
     <!-- HOMEPAGE VIEW -->
     <main id="homePage" class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10 transition-all duration-300">
-
-        <!-- WORK SECTION -->
-        <div class="mb-8">
-            <div id="workCard" class="glass rounded-[2rem] p-6 sm:p-8 relative overflow-hidden transition-all duration-500">
-                
-                <!-- Responsive Top Badges -->
-                <div class="flex justify-between items-start mb-6 sm:static sm:mb-0">
-                    <!-- Multiplier Badge -->
-                    <div id="multiplierBadgeContainer" class="sm:absolute sm:top-8 sm:left-8 z-20 flex flex-col items-start gap-1">
-                         <div id="cycleMultiplierBadge" class="transition-all duration-500">
-                            <!-- Filled dynamically by JS -->
-                         </div>
-                         <div id="ordersToNextTier" class="text-[9px] font-bold text-slate-400 pl-1 transition-all duration-300"></div>
-                    </div>
-
-                    <!-- Status Badge -->
-                    <div class="sm:absolute sm:top-8 sm:right-8 z-20 flex flex-col items-end gap-2 relative">
-                        <div class="flex items-center gap-2 mb-1">
-                            <button onclick="toggleWorkSettings()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all shadow-sm relative z-30 cursor-pointer">
-                                <i class="fa-solid fa-gear text-xs pointer-events-none"></i>
-                            </button>
-                        </div>
-                         <div id="speedBadge" class="hidden px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-800 text-slate-500 shadow-md">
-                            Ready
-                         </div>
-                    </div>
-                </div>
-
-                <!-- Timer Display -->
-                <div class="text-center mb-6 sm:mt-0 relative z-10">
-                    <div class="inline-flex flex-col items-center">
-                        <!-- Break Timer -->
-                        <div id="breakTimerContainer" class="hidden mb-1 flex items-center gap-2">
-                            <div class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></div>
-                            <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">On Break</span>
-                            <span id="breakTimerDisplay" class="font-mono text-[11px] font-bold text-orange-400">00:00</span>
-                        </div>
-                        
-                        <div class="inline-flex items-center justify-center bg-black/20 rounded-2xl px-6 py-2 border border-white/5">
-                            <span id="timerDisplay" class="font-mono text-3xl sm:text-4xl font-black text-white tracking-widest tabular-nums">00:00:00</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Big Counter -->
-                <div class="flex justify-center mb-8 relative">
-                    <button id="mainCounterBtn" onclick="incrementWorkCount()" class="counter-btn group relative w-48 h-48 sm:w-56 sm:h-56 rounded-full glass flex flex-col items-center justify-center border-4 border-white/5 hover:border-blue-500/30 transition-all duration-300 disabled">
-                        <div class="absolute inset-0 rounded-full bg-blue-500/0 group-hover:bg-blue-500/5 transition-all"></div>
-                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Total Orders</span>
-                        <span id="workCountDisplay" class="text-7xl sm:text-8xl font-black text-white tracking-tighter leading-none select-none transition-all duration-300">0</span>
-                        <div class="mt-4 flex flex-col items-center">
-                            <span class="text-[9px] font-bold text-slate-600 uppercase tracking-widest">ART</span>
-                            <span id="artDisplay" class="text-xs font-bold text-blue-400 mt-0.5">-- sec</span>
-                        </div>
-                    </button>
-                    
-                    <!-- Goal Ring SVGs -->
-                    <svg class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 sm:w-56 sm:h-56 -rotate-90 pointer-events-none" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2" />
-                        <circle id="goalRing" cx="50" cy="50" r="48" fill="none" stroke="#3b82f6" stroke-width="2" stroke-dasharray="301.59" stroke-dashoffset="301.59" class="transition-all duration-500" />
-                    </svg>
-                </div>
-
-                <!-- Day Progress Bar -->
-                <div class="w-full max-w-xs mx-auto mb-8 relative z-10">
-                    <div class="flex justify-between items-end text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
-                        <div class="flex flex-col items-start gap-0.5">
-                            <span>Day's Goal</span>
-                            <span id="ordersLeftText" class="text-[8px] font-bold text-slate-600 tracking-wider normal-case"></span>
-                        </div>
-                        <span id="sessionProgressText" class="text-blue-400">0%</span>
-                    </div>
-                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <div id="sessionProgressBar" class="h-full bg-blue-500 rounded-full transition-all duration-300" style="width: 0%"></div>
-                    </div>
-                </div>
-
-                <!-- Footer Controls -->
-                <div class="flex items-center justify-center gap-3 sm:gap-4 relative z-10">
-                    <button onclick="resetWorkSession()" class="px-4 sm:px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-bold uppercase tracking-wider transition-all">
-                        Reset
-                    </button>
-                    <button id="breakToggleBtn" onclick="toggleBreak()" class="hidden w-28 sm:w-32 px-4 sm:px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-mug-hot"></i> Break
-                    </button>
-                    <button id="loginToggleBtn" onclick="toggleLogin()" class="w-28 sm:w-32 px-4 sm:px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-right-to-bracket"></i> Login
-                    </button>
-                </div>
-
-                <!-- Logout Alert Container -->
-                <div id="logoutTimerContainer" class="sm:absolute sm:bottom-8 sm:right-8 mt-6 sm:mt-0 flex justify-center z-20 transition-all duration-500 hidden">
-                    <!-- Populated dynamically by JS -->
-                </div>
-
-                <!-- Goal Settings Overlay -->
-                <div id="workSettings" class="absolute inset-0 bg-slate-900/95 z-40 flex flex-col items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
-                    <h3 class="text-sm font-black text-white uppercase tracking-widest mb-4">Day's Goal</h3>
-                    <div class="flex items-center gap-2 mb-6">
-                        <button onclick="adjustWorkGoal(-10)" class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white"><i class="fa-solid fa-minus"></i></button>
-                        <input id="sessionGoalInput" type="number" value="100" class="w-24 bg-transparent text-center text-3xl font-black text-white border-b border-white/10 focus:border-blue-500 outline-none p-2">
-                        <button onclick="adjustWorkGoal(10)" class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white"><i class="fa-solid fa-plus"></i></button>
-                    </div>
-                    <button onclick="saveWorkSettings()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider">Done</button>
-                </div>
-            </div>
-        </div>
 
         <!-- Total Monthly Summary -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6 sm:mb-8">
@@ -517,25 +416,8 @@
                 <svg id="monthlyGoalChart" viewBox="0 0 960 360" preserveAspectRatio="none" role="img" aria-label="Monthly cumulative orders compared with goal pace"></svg>
                 <div id="chartTooltip" class="chart-tooltip"></div>
             </div>
-            <p class="text-[9px] text-slate-600 font-bold mt-3 text-center">Move across the chart to inspect any day · values update when you enter orders above</p>
+            <p class="text-[9px] text-slate-600 font-bold mt-3 text-center">Move across the chart to inspect any day · error deductions and special-pay days update the required order pace</p>
         </section>
-    </main>
-
-    <!-- SESSIONS PAGE VIEW -->
-    <main id="sessionsPage" class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10 hidden transition-all duration-300">
-        <div class="flex items-center gap-4 mb-8">
-            <button onclick="switchPage('home')" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 text-slate-400 hover:text-white transition-all shrink-0">
-                <i class="fa-solid fa-arrow-left"></i>
-            </button>
-            <h2 class="text-2xl font-black text-white tracking-tight flex items-center gap-3">
-                <i class="fa-solid fa-clock-rotate-left text-blue-500"></i> Historical Sessions
-            </h2>
-        </div>
-
-        <!-- Grouped Timeline Container -->
-        <div class="glass rounded-[2rem] p-6 sm:p-8" id="sessionTimelineContainer">
-            <!-- Populated via JS -->
-        </div>
     </main>
 
     <div id="goalModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 backdrop-blur-md bg-slate-950/40">
@@ -763,80 +645,58 @@
         };
 
         const calculateTieredEarnings = (orders) => {
-            const n = Number(orders) || 0;
+            const n = Math.max(0, Number(orders) || 0);
             if (n <= 1000) return n * 1;
             if (n <= 2000) return 1000 + (n - 1000) * 2;
             if (n <= 3000) return 3000 + (n - 2000) * 3;
             return 6000 + (n - 3000) * 4;
         };
 
-        const updateMultiplierBadge = (orders, isVisible = true) => {
-            const container = document.getElementById('multiplierBadgeContainer');
-            if (container) {
-                if (!isVisible) {
-                    container.style.display = 'none';
-                    return;
-                } else {
-                    container.style.display = '';
-                }
-            }
-
-            const badge = document.getElementById('cycleMultiplierBadge');
-            const nextTierText = document.getElementById('ordersToNextTier');
-            if (!badge) return;
-            
-            const n = Number(orders) || 0;
-            let text, classes, icon;
-
-            if (n < 1000) {
-                text = "1x Rate";
-                icon = '<i class="fa-solid fa-seedling text-slate-500"></i>';
-                classes = "bg-slate-500/10 text-slate-400 border-slate-500/20";
-                if (nextTierText) nextTierText.innerHTML = `<span class="text-slate-300">${1000 - n}</span> left for 2x`;
-            } else if (n < 2000) {
-                text = "2x Rate";
-                icon = '<i class="fa-solid fa-angles-up text-blue-400"></i>';
-                classes = "anim-bounce-gentle bg-blue-500/20 text-blue-400 border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.3)]";
-                if (nextTierText) nextTierText.innerHTML = `<span class="text-blue-300">${2000 - n}</span> left for 3x`;
-            } else if (n < 3000) {
-                text = "3x Rate";
-                icon = '<i class="fa-solid fa-rocket text-purple-400"></i>';
-                classes = "anim-tilt-pulse bg-purple-500/20 text-purple-400 border-purple-500/30";
-                if (nextTierText) nextTierText.innerHTML = `<span class="text-purple-300">${3000 - n}</span> left for 4x`;
-            } else {
-                text = "MAX 4x RATE";
-                icon = '<i class="fa-solid fa-fire text-yellow-500"></i>';
-                classes = "anim-thruster bg-yellow-500/20 text-yellow-400 border-yellow-500/40 shadow-[0_0_20px_rgba(234,179,8,0.5)]";
-                if (nextTierText) nextTierText.innerText = '';
-            }
-
-            badge.className = `px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5 transition-all duration-500 ${classes}`;
-            badge.innerHTML = `${icon} <span>${text}</span>`;
+        // Special-pay schedule: the rate is selected by the order bracket,
+        // then applied to every order on that special-pay day.
+        const calculateSpecialPay = (orders) => {
+            const n = Math.max(0, Math.floor(Number(orders) || 0));
+            if (n <= 1000) return n * 2;
+            if (n <= 2000) return n * 3;
+            if (n <= 3000) return n * 4;
+            return n * 5;
         };
 
         const getDeductionMultiplier = (errors) => {
-            const e = Number(errors) || 0;
+            const e = Math.max(0, Number(errors) || 0);
             if (e === 0) return 1;
-            if (e <= 10) return 0.9;
-            if (e <= 20) return 0.8;
-            if (e <= 30) return 0.5;
-            return 0; 
+            if (e <= 5) return 0.90;   // 10% deduction
+            if (e <= 10) return 0.80;  // 20% deduction
+            if (e <= 15) return 0.50;  // 50% deduction
+            return 0;                  // No payment
         };
 
-        const getRequiredOrdersForNet = (targetNet, currentErrors, currentRegularOrders = 0) => {
+        // Finds the minimum order count required to hit a net target at the
+        // current error deduction. This is deliberately calculated from the
+        // actual payout curve instead of a flat average rate, so crossing
+        // 1k/2k/3k tiers is handled correctly.
+        const getRequiredOrdersForNet = (targetNet, currentErrors, useSpecialPay = false) => {
+            const target = Math.max(0, Number(targetNet) || 0);
+            if (target <= 0) return 0;
             const mult = getDeductionMultiplier(currentErrors);
-            if (mult === 0) return Infinity; 
-            const grossTarget = targetNet / (mult * 0.9);
-            
-            const remainingTargetForPremium = Math.max(0, grossTarget - (currentRegularOrders * 1));
-            
-            let reqPremium = 0;
-            if (remainingTargetForPremium <= 1000) reqPremium = remainingTargetForPremium;
-            else if (remainingTargetForPremium <= 3000) reqPremium = 1000 + (remainingTargetForPremium - 1000) / 2;
-            else if (remainingTargetForPremium <= 6000) reqPremium = 2000 + (remainingTargetForPremium - 3000) / 3;
-            else reqPremium = 3000 + (remainingTargetForPremium - 6000) / 4;
+            if (mult === 0) return Infinity;
 
-            return Math.ceil(reqPremium) + currentRegularOrders;
+            const payout = (orders) => {
+                const gross = useSpecialPay ? calculateSpecialPay(orders) : calculateTieredEarnings(orders);
+                return gross * mult * 0.9;
+            };
+
+            let lo = 0;
+            let hi = 1000;
+            while (payout(hi) < target && hi < 1000000) hi *= 2;
+            if (hi >= 1000000 && payout(hi) < target) return Infinity;
+
+            while (lo < hi) {
+                const mid = Math.floor((lo + hi) / 2);
+                if (payout(mid) >= target) hi = mid;
+                else lo = mid + 1;
+            }
+            return lo;
         };
 
         const generateMonthTemplate = (year, monthIdx) => {
@@ -845,8 +705,9 @@
             const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
             return { 
                 id: monthId, 
-                name: monthName, year, monthIdx, goal: monthlyGoal, 
-                days: Array.from({ length: daysInMonth }, (_, i) => ({ date: i + 1, premiumOrders: 0, regularOrders: 0, errors: 0 })) 
+                name: monthName, year, monthIdx, goal: monthlyGoal,
+                specialPayEnabled: false,
+                days: Array.from({ length: daysInMonth }, (_, i) => ({ date: i + 1, premiumOrders: 0, regularOrders: 0, errors: 0, specialPayEnabled: false })) 
             };
         };
 
@@ -904,6 +765,14 @@
             months.sort((a, b) => (a.year * 12 + a.monthIdx) - (b.year * 12 + b.monthIdx));
             months.forEach(m => {
                 if (!Number(m.goal)) m.goal = Number(monthlyGoal) || 50000;
+                if (typeof m.specialPayEnabled !== 'boolean') m.specialPayEnabled = false;
+                if (!Array.isArray(m.days)) m.days = [];
+                m.days.forEach(d => {
+                    if (typeof d.specialPayEnabled !== 'boolean') d.specialPayEnabled = false;
+                    if (d.premiumOrders === undefined) d.premiumOrders = d.isRegular ? 0 : (Number(d.orders) || 0);
+                    if (d.regularOrders === undefined) d.regularOrders = d.isRegular ? (Number(d.orders) || 0) : 0;
+                    if (d.errors === undefined) d.errors = 0;
+                });
             });
         };
 
@@ -954,7 +823,6 @@
                 renderMonthSelector();
                 updateUI();
                 if (typeof updateWorkUI === 'function') updateWorkUI();
-                if (window.currentPage === 'sessions' && typeof window.updateSessionsPage === 'function') window.updateSessionsPage();
                 
             }, (error) => {
                 console.error("Firebase Sync Blocked by Rules/Network:", error);
@@ -1124,23 +992,9 @@
             saveToCloud();
         };
 
-        // UI Routing
-        window.switchPage = (pageId) => {
-            window.currentPage = pageId;
-            const homePage = document.getElementById('homePage');
-            const sessionsPage = document.getElementById('sessionsPage');
-            const navIcon = document.getElementById('navSessionIcon');
-
-            if (pageId === 'sessions') {
-                if(homePage) homePage.classList.add('hidden');
-                if(sessionsPage) sessionsPage.classList.remove('hidden');
-                if(navIcon) navIcon.className = "fa-solid fa-house text-blue-400 text-xs hover:text-white transition-colors";
-                if (typeof window.updateSessionsPage === 'function') window.updateSessionsPage();
-            } else {
-                if(homePage) homePage.classList.remove('hidden');
-                if(sessionsPage) sessionsPage.classList.add('hidden');
-                if(navIcon) navIcon.className = "fa-solid fa-list-ul text-slate-400 text-xs hover:text-white transition-colors";
-            }
+        // Legacy routing bridge kept for compatibility with old saved state.
+        window.switchPage = () => {
+            window.currentPage = 'home';
         };
 
         const formatISTTimeStr = (ts, sessionStartTs) => {
@@ -1598,6 +1452,7 @@
             day.premiumOrders = 0;
             day.regularOrders = 0;
             day.errors = 0;
+            day.specialPayEnabled = false;
             day.orders = 0; 
             
             // We intentionally DO NOT clear the live work session or historical data here 
@@ -1629,19 +1484,31 @@
             const calcPeriod = (days, isP1, targetNet) => {
                 let rawPremium = 0;
                 let rawRegular = 0;
+                let totalOrders = 0;
                 let totalErrors = 0;
+                let specialPayOrders = 0;
+                let specialPayGross = 0;
 
                 days.forEach(d => {
                     const legacyOrders = Number(d.orders) || 0;
-                    const pOrders = d.premiumOrders !== undefined ? Number(d.premiumOrders) : (d.isRegular ? 0 : legacyOrders);
-                    const rOrders = d.regularOrders !== undefined ? Number(d.regularOrders) : (d.isRegular ? legacyOrders : 0);
+                    const pOrders = d.premiumOrders !== undefined ? Number(d.premiumOrders) || 0 : (d.isRegular ? 0 : legacyOrders);
+                    const rOrders = d.regularOrders !== undefined ? Number(d.regularOrders) || 0 : (d.isRegular ? legacyOrders : 0);
+                    const dayOrders = Math.max(0, pOrders + rOrders);
+                    const special = Boolean(m.specialPayEnabled || d.specialPayEnabled);
 
-                    rawPremium += pOrders;
-                    rawRegular += rOrders;
-                    totalErrors += Number(d.errors) || 0;
+                    totalOrders += dayOrders;
+                    totalErrors += Math.max(0, Number(d.errors) || 0);
+
+                    if (special) {
+                        specialPayOrders += dayOrders;
+                        specialPayGross += calculateSpecialPay(dayOrders);
+                    } else {
+                        rawPremium += pOrders;
+                        rawRegular += rOrders;
+                    }
                 });
 
-                // Shift first 1000 orders to premium
+                // Preserve the existing normal payout structure for non-special days.
                 let premiumOrders = rawPremium;
                 let regularOrders = rawRegular;
                 if (premiumOrders < 1000 && regularOrders > 0) {
@@ -1650,14 +1517,19 @@
                     regularOrders -= shift;
                 }
 
-                const totalOrders = premiumOrders + regularOrders;
-                const baseEarnings = calculateTieredEarnings(premiumOrders) + (regularOrders * 1);
-                const net = baseEarnings * getDeductionMultiplier(totalErrors) * 0.9;
-                const req = getRequiredOrdersForNet(targetNet, totalErrors, regularOrders);
-                const left = Math.max(0, req - totalOrders);
+                const normalGross = calculateTieredEarnings(premiumOrders) + (regularOrders * 1);
+                const baseEarnings = normalGross + specialPayGross;
+                const deductionMultiplier = getDeductionMultiplier(totalErrors);
+                const net = baseEarnings * deductionMultiplier * 0.9;
+
+                // Required order count is based on the current error deduction.
+                // If special pay is active for the whole period, use its higher payout curve.
+                const periodSpecial = Boolean(m.specialPayEnabled);
+                const req = getRequiredOrdersForNet(targetNet, totalErrors, periodSpecial);
+                const left = Math.max(0, req === Infinity ? Infinity : req - totalOrders);
                 const percent = targetNet > 0 ? Math.min(100, (net / targetNet) * 100) : (net > 0 ? 100 : 0);
                 const achieved = net >= targetNet;
-                
+
                 let daysLeft = 0;
                 let status = "ACTIVE";
                 let statusColor = "text-blue-500";
@@ -1668,7 +1540,7 @@
                         if (currentDay > 15) { status = "ENDED"; statusColor = "text-slate-500"; }
                         else { daysLeft = 15 - currentDay + 1; isCurrentPhase = true; }
                     } else {
-                        if (currentDay < 16) { 
+                        if (currentDay < 16) {
                             const diff = 16 - currentDay;
                             status = `IN ${diff} DAYS`;
                             statusColor = "text-purple-400";
@@ -1680,47 +1552,58 @@
                     status = "UPCOMING"; statusColor = "text-purple-400";
                 }
 
-                const pace = Math.ceil(left / Math.max(1, daysLeft));
+                const pace = req === Infinity ? Infinity : Math.ceil(left / Math.max(1, daysLeft));
                 const title = isP1 ? `${m.name} 01 - 15` : `${m.name} 16 - ${lastDay}`;
 
-                return { orders: totalOrders, premiumOrders, regularOrders, errors: totalErrors, net, req, left, achieved, pace, status, statusColor, percent, daysLeft, title, isCurrentPhase };
+                return {
+                    orders: totalOrders,
+                    premiumOrders,
+                    regularOrders,
+                    specialPayOrders,
+                    errors: totalErrors,
+                    gross: baseEarnings,
+                    net,
+                    req,
+                    left,
+                    achieved,
+                    pace,
+                    status,
+                    statusColor,
+                    percent,
+                    daysLeft,
+                    title,
+                    isCurrentPhase,
+                    deductionMultiplier
+                };
             };
 
             const p1Target = currentMonthlyGoal / 2;
             const p1 = calcPeriod(m.days.filter(d => d.date <= 15), true, p1Target);
-            
             const p2Target = Math.max(0, currentMonthlyGoal - p1.net);
             const p2 = calcPeriod(m.days.filter(d => d.date > 15), false, p2Target);
-            
             const totalNet = p1.net + p2.net;
-            
-            if (currentDay > 15) {
-                updateMultiplierBadge(p2.premiumOrders, isThisMonth);
-            } else {
-                updateMultiplierBadge(p1.premiumOrders, isThisMonth);
-            }
+            const totalErrors = p1.errors + p2.errors;
+            const totalOrders = p1.orders + p2.orders;
+
+            const activePeriod = currentDay > 15 ? p2 : p1;
+            updateMultiplierBadge(activePeriod.premiumOrders, isThisMonth);
 
             const headerGoalText = document.getElementById('headerGoalText');
             if(headerGoalText) headerGoalText.innerText = formatCurrency(currentMonthlyGoal);
-            
             const totalNetDisplay = document.getElementById('totalNetDisplay');
             if(totalNetDisplay) totalNetDisplay.innerText = formatCurrency(totalNet);
-            
             const monthlyGoalDisplay = document.getElementById('monthlyGoalDisplay');
             if(monthlyGoalDisplay) monthlyGoalDisplay.innerText = `/ ${formatCurrency(currentMonthlyGoal)} NET`;
-            
-            const totalPercent = Math.min(100, (totalNet / currentMonthlyGoal) * 100);
-            
+
+            const totalPercent = currentMonthlyGoal > 0 ? Math.min(100, (totalNet / currentMonthlyGoal) * 100) : 0;
             const mainProgressBar = document.getElementById('mainProgressBar');
             if(mainProgressBar) mainProgressBar.style.width = `${totalPercent}%`;
-            
             const percentDone = document.getElementById('percentDone');
             if(percentDone) percentDone.innerText = `${totalPercent.toFixed(2)}% Done`;
-            
             const statusIcon = document.getElementById('statusIcon');
             if(statusIcon) {
-                statusIcon.innerHTML = totalNet >= currentMonthlyGoal 
-                    ? '<i class="fa-solid fa-trophy text-yellow-500 text-xl"></i>' 
+                statusIcon.innerHTML = totalNet >= currentMonthlyGoal
+                    ? '<i class="fa-solid fa-trophy text-yellow-500 text-xl"></i>'
                     : '<i class="fa-solid fa-bolt-lightning text-blue-400 text-xl"></i>';
             }
 
@@ -1738,7 +1621,12 @@
 
             const W = 960, H = 360, L = 58, R = 28, T = 28, B = 46;
             const plotW = W - L - R, plotH = H - T - B;
-            const required = Math.max(1, getRequiredOrdersForNet(goal, 0, 0));
+            const totalErrors = m.days.reduce((sum, d) => sum + Math.max(0, Number(d.errors) || 0), 0);
+            const normalRequired = getRequiredOrdersForNet(goal, totalErrors, false);
+            const specialRequired = getRequiredOrdersForNet(goal, totalErrors, true);
+            const monthHasSpecial = Boolean(m.specialPayEnabled) || m.days.some(d => d.specialPayEnabled);
+            const required = monthHasSpecial ? Math.min(normalRequired, specialRequired) : normalRequired;
+
             let running = 0;
             const actual = m.days.map(d => {
                 const legacy = Number(d.orders) || 0;
@@ -1747,6 +1635,7 @@
                 running += premium + regular;
                 return running;
             });
+
             const nowIST = getISTDate();
             const selectedMonthKey = m.year * 12 + m.monthIdx;
             const currentMonthKey = nowIST.getFullYear() * 12 + nowIST.getMonth();
@@ -1756,8 +1645,9 @@
                     ? Math.min(currentDay, m.days.length)
                     : 0;
             const visibleActual = actual.slice(0, actualEndDay);
-            const target = m.days.map((_, i) => required * ((i + 1) / m.days.length));
-            const maxY = Math.max(required, running, 10) * 1.12;
+            const safeRequired = Number.isFinite(required) ? required : Math.max(1, actual[actualEndDay - 1] || 1);
+            const target = m.days.map((_, i) => safeRequired * ((i + 1) / m.days.length));
+            const maxY = Math.max(safeRequired, running, 10) * 1.12;
             const x = i => L + (i / Math.max(1, m.days.length - 1)) * plotW;
             const y = v => T + plotH - (v / maxY) * plotH;
             const points = values => values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
@@ -1766,11 +1656,11 @@
             const paceDelta = actual[focusIndex] - target[focusIndex];
             const paceText = paceDelta >= 0 ? `+${Math.round(paceDelta)} ahead` : `${Math.abs(Math.round(paceDelta))} behind`;
 
-            document.getElementById('chartRequired').innerText = required.toLocaleString();
+            document.getElementById('chartRequired').innerText = Number.isFinite(required) ? required.toLocaleString() : 'N/A';
             document.getElementById('chartCompleted').innerText = running.toLocaleString();
             document.getElementById('chartPace').innerText = paceText;
             document.getElementById('chartPace').className = `text-base sm:text-xl font-black ${paceDelta >= 0 ? 'text-emerald-400' : 'text-yellow-400'}`;
-            document.getElementById('chartSubtitle').innerText = `${m.name} ${m.year} · ${formatCurrency(goal)} goal · ${Math.ceil(required / m.days.length)} orders/day average`;
+            document.getElementById('chartSubtitle').innerText = `${m.name} ${m.year} · ${formatCurrency(goal)} goal · ${Number.isFinite(required) ? Math.ceil(required / m.days.length) : 'N/A'} orders/day average · ${totalErrors} error${totalErrors === 1 ? '' : 's'}`;
 
             let grid = '';
             for (let i = 0; i <= 4; i++) {
@@ -1805,17 +1695,23 @@
 
             const showDay = (day, clientX, clientY) => {
                 const i = Math.max(0, Math.min(m.days.length - 1, day - 1));
-                svg.querySelector('#chartCursor').setAttribute('x1', x(i)); svg.querySelector('#chartCursor').setAttribute('x2', x(i));
-                svg.querySelector('#chartTargetDot').setAttribute('cx', x(i)); svg.querySelector('#chartTargetDot').setAttribute('cy', y(target[i]));
+                svg.querySelector('#chartCursor').setAttribute('x1', x(i));
+                svg.querySelector('#chartCursor').setAttribute('x2', x(i));
+                svg.querySelector('#chartTargetDot').setAttribute('cx', x(i));
+                svg.querySelector('#chartTargetDot').setAttribute('cy', y(target[i]));
                 const hasActual = day <= actualEndDay;
                 svg.querySelector('#chartActualDot').setAttribute('visibility', hasActual ? 'visible' : 'hidden');
                 if (hasActual) {
                     svg.querySelector('#chartActualDot').setAttribute('cx', x(i));
                     svg.querySelector('#chartActualDot').setAttribute('cy', y(actual[i]));
                 }
+                const dayErrors = Math.max(0, Number(m.days[i].errors) || 0);
+                const daySpecial = Boolean(m.specialPayEnabled || m.days[i].specialPayEnabled);
                 tooltip.innerHTML = `<p class="text-[9px] uppercase tracking-widest font-black text-slate-500 mb-2">${m.name} ${day}</p>
                     <div class="flex justify-between gap-5 text-[11px] font-bold"><span class="text-yellow-400">Goal pace</span><span class="text-white">${Math.round(target[i]).toLocaleString()}</span></div>
-                    <div class="flex justify-between gap-5 text-[11px] font-bold mt-1"><span class="text-blue-400">Your orders</span><span class="text-white">${hasActual ? actual[i].toLocaleString() : 'Not yet'}</span></div>`;
+                    <div class="flex justify-between gap-5 text-[11px] font-bold mt-1"><span class="text-blue-400">Your orders</span><span class="text-white">${hasActual ? actual[i].toLocaleString() : 'Not yet'}</span></div>
+                    <div class="flex justify-between gap-5 text-[11px] font-bold mt-1"><span class="text-red-400">Errors</span><span class="text-white">${dayErrors}</span></div>
+                    <div class="flex justify-between gap-5 text-[11px] font-bold mt-1"><span class="text-yellow-300">Special pay</span><span class="text-white">${daySpecial ? 'ON' : 'OFF'}</span></div>`;
                 const shellRect = svg.parentElement.getBoundingClientRect();
                 tooltip.style.left = `${clientX - shellRect.left}px`;
                 tooltip.style.top = `${clientY - shellRect.top}px`;
@@ -1892,63 +1788,93 @@
         const renderTable = (m, todayDay, isThisMonth) => {
             const container = document.getElementById('calendarContainer');
             if (!container) return;
-            
-            let firstHalfHtml = '<div class="mb-8"><div class="flex items-center gap-2 mb-4 px-2"><i class="fa-solid fa-moon text-blue-500 text-sm"></i><h4 class="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-[0.2em]">First Half <span class="text-slate-500 font-bold ml-1">(1-15)</span></h4></div><div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">';
-            
-            let secondHalfHtml = '<div><div class="flex items-center gap-2 mb-4 px-2 mt-4"><i class="fa-regular fa-moon text-purple-500 text-sm"></i><h4 class="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-[0.2em]">Second Half <span class="text-slate-500 font-bold ml-1">(16-End)</span></h4></div><div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">';
-            
+
+            const monthSpecialOn = Boolean(m.specialPayEnabled);
+            const monthButtonClass = monthSpecialOn
+                ? 'bg-yellow-400 text-slate-950 border-yellow-300 shadow-[0_0_18px_rgba(250,204,21,.2)]'
+                : 'bg-white/5 text-slate-300 border-white/10 hover:bg-yellow-400/10 hover:text-yellow-300';
+
+            let firstHalfHtml = `<div class="mb-8">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4 px-2">
+                    <div class="flex items-center gap-2"><i class="fa-solid fa-moon text-blue-500 text-sm"></i><h4 class="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-[0.2em]">First Half <span class="text-slate-500 font-bold ml-1">(1-15)</span></h4></div>
+                    <button onclick="window.toggleMonthSpecialPay()" class="px-3 py-1.5 rounded-lg border text-[8px] font-black uppercase tracking-widest transition-all ${monthButtonClass}">${monthSpecialOn ? 'Month Special Pay: ON' : 'Enable Special Pay for Month'}</button>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">`;
+
+            let secondHalfHtml = `<div>
+                <div class="flex items-center gap-2 mb-4 px-2 mt-4"><i class="fa-regular fa-moon text-purple-500 text-sm"></i><h4 class="text-[10px] sm:text-xs font-black text-slate-300 uppercase tracking-[0.2em]">Second Half <span class="text-slate-500 font-bold ml-1">(16-End)</span></h4></div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">`;
+
             m.days.forEach((day) => {
                 const isToday = isThisMonth && day.date === todayDay;
-                
-                // Determine day of week to highlight Sundays
                 const dateObj = new Date(m.year, m.monthIdx, day.date);
                 const isSunday = dateObj.getDay() === 0;
                 const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-                
                 const legacyOrders = Number(day.orders) || '';
                 const pVal = day.premiumOrders !== undefined ? (day.premiumOrders || '') : (day.isRegular ? '' : legacyOrders);
                 const rVal = day.regularOrders !== undefined ? (day.regularOrders || '') : (day.isRegular ? legacyOrders : '');
-                
-                const hasData = Number(pVal) > 0 || Number(rVal) > 0 || Number(day.errors) > 0;
+                const specialOn = Boolean(m.specialPayEnabled || day.specialPayEnabled);
+                const hasData = Number(pVal) > 0 || Number(rVal) > 0 || Number(day.errors) > 0 || day.specialPayEnabled;
+                const cardClass = isToday
+                    ? 'bg-blue-500/10 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)] ring-1 ring-blue-500'
+                    : (specialOn ? 'special-pay-active' : (isSunday ? 'bg-red-500/5 border-red-500/20' : 'bg-white/[0.02] border-white/5 hover:border-white/10 hover:bg-white/[0.04]'));
 
                 const cellHtml = `
-                    <div class="relative p-3 sm:p-4 rounded-2xl border transition-all duration-300 ${isToday ? 'bg-blue-500/10 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)] ring-1 ring-blue-500' : (isSunday ? 'bg-red-500/5 border-red-500/20' : 'bg-white/[0.02] border-white/5 hover:border-white/10 hover:bg-white/[0.04]')}">
-                        <div class="flex justify-between items-start mb-4">
+                    <div class="relative p-3 sm:p-4 rounded-2xl border transition-all duration-300 ${cardClass}">
+                        <div class="flex justify-between items-start mb-3">
                             <div class="flex flex-col">
-                                <span class="text-sm sm:text-base font-black leading-none ${isSunday ? 'text-red-400' : (isToday ? 'text-blue-400' : 'text-slate-150')}">${day.date}</span>
+                                <span class="text-sm sm:text-base font-black leading-none ${isSunday ? 'text-red-400' : (isToday ? 'text-blue-400' : 'text-slate-150')} ">${day.date}</span>
                                 <span class="text-[9px] font-bold uppercase tracking-widest mt-1 ${isSunday ? 'text-red-500/70' : 'text-slate-500'}">${dayName}</span>
                             </div>
                             ${hasData ? `<button onclick="window.clearDayData(${day.date})" class="w-6 h-6 rounded-full bg-red-500/10 hover:bg-red-500 hover:shadow-[0_0_10px_rgba(239,68,68,0.5)] text-red-400 hover:text-white flex items-center justify-center transition-all group" title="Clear Day"><i class="fa-solid fa-trash-can text-[9px] group-hover:scale-110 transition-transform"></i></button>` : `<div class="w-6 h-6 flex items-center justify-center"><div class="w-1 h-1 rounded-full ${isSunday ? 'bg-red-500/20' : 'bg-white/10'}"></div></div>`}
                         </div>
-                        
+
+                        <button onclick="window.toggleDaySpecialPay(${day.date})" class="w-full mb-2 px-2.5 py-1.5 rounded-lg border text-[8px] font-black uppercase tracking-wider transition-all ${specialOn ? 'bg-yellow-400/15 border-yellow-400/40 text-yellow-300' : 'bg-white/[0.02] border-white/5 text-slate-600 hover:text-yellow-300 hover:border-yellow-400/20'}">
+                            <i class="fa-solid fa-star mr-1"></i>${specialOn ? 'Special Pay ON' : 'Special Pay OFF'}
+                        </button>
+
                         <div class="space-y-2">
                             <div class="relative">
                                 <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-black text-purple-400 uppercase tracking-wider">Prem</span>
-                                <input type="number" onblur="window.updateDayData(${day.date}, 'premiumOrders', this.value)" value="${pVal}" class="w-full bg-[#020617]/50 border border-white/5 rounded-lg py-2 pl-10 pr-2 text-xs font-black text-purple-100 text-right focus:border-purple-500 focus:bg-purple-500/5 outline-none transition-all placeholder:text-slate-700" placeholder="0">
+                                <input type="number" min="0" onblur="window.updateDayData(${day.date}, 'premiumOrders', this.value)" value="${pVal}" class="w-full bg-[#020617]/50 border border-white/5 rounded-lg py-2 pl-10 pr-2 text-xs font-black text-purple-100 text-right focus:border-purple-500 focus:bg-purple-500/5 outline-none transition-all placeholder:text-slate-700" placeholder="0">
                             </div>
                             <div class="relative">
                                 <span class="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-400 uppercase tracking-wider">Reg</span>
-                                <input type="number" onblur="window.updateDayData(${day.date}, 'regularOrders', this.value)" value="${rVal}" class="w-full bg-[#020617]/50 border border-white/5 rounded-lg py-2 pl-10 pr-2 text-xs font-black text-slate-200 text-right focus:border-slate-500 focus:bg-white/5 outline-none transition-all placeholder:text-slate-700" placeholder="0">
+                                <input type="number" min="0" onblur="window.updateDayData(${day.date}, 'regularOrders', this.value)" value="${rVal}" class="w-full bg-[#020617]/50 border border-white/5 rounded-lg py-2 pl-10 pr-2 text-xs font-black text-slate-200 text-right focus:border-slate-500 focus:bg-white/5 outline-none transition-all placeholder:text-slate-700" placeholder="0">
                             </div>
                             <div class="relative pt-1 border-t border-white/5 mt-1">
                                 <span class="absolute left-2 top-[calc(50%+2px)] -translate-y-1/2 text-[8px] font-black text-red-400 uppercase tracking-wider">Err</span>
-                                <input type="number" onblur="window.updateDayData(${day.date}, 'errors', this.value)" value="${day.errors || ''}" class="w-full bg-[#020617]/50 border border-white/5 rounded-lg py-2 pl-10 pr-2 text-xs font-black text-right outline-none transition-all placeholder:text-slate-700 ${Number(day.errors) > 0 ? 'text-red-400 border-red-500/30 bg-red-500/5' : 'text-slate-500 focus:border-red-500 focus:bg-red-500/5'}" placeholder="0">
+                                <input type="number" min="0" onblur="window.updateDayData(${day.date}, 'errors', this.value)" value="${day.errors || ''}" class="w-full bg-[#020617]/50 border border-white/5 rounded-lg py-2 pl-10 pr-2 text-xs font-black text-right outline-none transition-all placeholder:text-slate-700 ${Number(day.errors) > 0 ? 'text-red-400 border-red-500/30 bg-red-500/5' : 'text-slate-500 focus:border-red-500 focus:bg-red-500/5'}" placeholder="0">
                             </div>
                         </div>
                     </div>
                 `;
 
-                if (day.date <= 15) {
-                    firstHalfHtml += cellHtml;
-                } else {
-                    secondHalfHtml += cellHtml;
-                }
+                if (day.date <= 15) firstHalfHtml += cellHtml;
+                else secondHalfHtml += cellHtml;
             });
 
             firstHalfHtml += '</div></div>';
             secondHalfHtml += '</div></div>';
-
             container.innerHTML = firstHalfHtml + secondHalfHtml;
+        };
+
+        window.toggleDaySpecialPay = async (date) => {
+            const m = months.find(m => m.id === activeMonthId);
+            if (!m) return;
+            const day = m.days.find(d => d.date === date);
+            if (!day) return;
+            day.specialPayEnabled = !Boolean(day.specialPayEnabled);
+            updateUI();
+            await saveToCloud();
+        };
+
+        window.toggleMonthSpecialPay = async () => {
+            const m = months.find(m => m.id === activeMonthId);
+            if (!m) return;
+            m.specialPayEnabled = !Boolean(m.specialPayEnabled);
+            updateUI();
+            await saveToCloud();
         };
 
         const startup = async () => {
@@ -2015,7 +1941,8 @@
             const m = months.find(m => m.id === activeMonthId);
             if (!m) return;
             const day = m.days.find(d => d.date === date);
-            day[field] = Number(value) || 0;
+            const numericValue = Math.max(0, Number(value) || 0);
+            day[field] = numericValue;
             updateUI();
             saveToCloud();
         };
